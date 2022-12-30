@@ -26,7 +26,7 @@ class SiteController extends AbstractController
     }
 
     /**
-     * @Route("/site/new", name="app_site_new", methods={"GET", "POST"})
+     * @Route("/admin/site/new", name="app_site_new", methods={"GET", "POST"})
      */
     public function new(Request $request, SiteRepository $siteRepository): Response
     {
@@ -47,7 +47,7 @@ class SiteController extends AbstractController
     }
 
     /**
-     * @Route("/site/{id}", name="app_site_show", methods={"GET"})
+     * @Route("/admin/site/{id}", name="app_site_show", methods={"GET"})
      */
     public function show(Site $site): Response
     {
@@ -57,7 +57,7 @@ class SiteController extends AbstractController
     }
 
     /**
-     * @Route("/edit/{id}", name="app_site_edit", methods={"GET", "POST"})
+     * @Route("/admin/edit/{id}", name="app_site_edit", methods={"GET", "POST"})
      */
     public function edit(Request $request, Site $site, SiteRepository $siteRepository): Response
     {
@@ -77,7 +77,7 @@ class SiteController extends AbstractController
     }
 
     /**
-     * @Route("/delete/{id}", name="app_site_delete", methods={"POST"})
+     * @Route("/admin/delete/{id}", name="app_site_delete", methods={"POST"})
      */
     public function delete(Request $request, Site $site, SiteRepository $siteRepository): Response
     {
