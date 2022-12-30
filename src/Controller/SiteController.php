@@ -87,4 +87,12 @@ class SiteController extends AbstractController
 
         return $this->redirectToRoute('app_site_index', [], Response::HTTP_SEE_OTHER);
     }
+
+    /**
+     * @Route("/site-info", name="app_site_message", methods={"GET"})
+     */
+    public function infoMessage()
+    {
+        return $this->render('site/info_message.html.twig');
+    }
 }

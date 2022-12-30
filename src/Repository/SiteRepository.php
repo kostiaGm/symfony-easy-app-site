@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Site;
+use App\Exceptions\SiteException;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -39,28 +40,52 @@ class SiteRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
-//     * @return Site[] Returns an array of Site objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('s.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * @param string $domain
+     * @param int|null $status
+     * @return Site
+     * @throws SiteException
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
+    public function getSiteByDomain(string $domain, ?int $status): Site
+    {
+        $queryBuilder = $this->createQueryBuilder('s')
+            ->where("s.domain=:domain")
+            ->setParameter("domain", $domain);
 
-//    public function findOneBySomeField($value): ?Site
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($status !== null) {
+            $queryBuilder
+                ->andWhere("s.status=:status")
+                ->setParameter("status", $status);
+        }
+
+        $result = $queryBuilder
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (empty($result)) {
+            throw new SiteException("Site [ {$domain} ] not found");
+        }
+
+        return $result;
+    }
+
+    public function getCountByStatus(?int $status): int
+    {
+        $queryBuilder = $this
+            ->createQueryBuilder('s')
+            ->select("COUNT(s.id)");
+
+        if ($status !== null) {
+            $queryBuilder
+                ->where("s.status=:status")
+                ->setParameter("status", $status);
+        }
+
+        return (int)
+            $queryBuilder
+                ->getQuery()
+                ->getSingleScalarResult();
+    }
 }
+

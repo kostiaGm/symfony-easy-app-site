@@ -2,14 +2,17 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\StatusInterface;
+use App\Entity\Traits\StatusTrait;
 use App\Repository\SiteRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass=SiteRepository::class)
  */
-class Site
+class Site implements StatusInterface
 {
+    use StatusTrait;
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -26,11 +29,6 @@ class Site
      * @ORM\Column(type="string", length=255)
      */
     private $domain;
-
-    /**
-     * @ORM\Column(type="smallint")
-     */
-    private $status;
 
     public function getId(): ?int
     {
@@ -60,16 +58,5 @@ class Site
 
         return $this;
     }
-
-    public function getStatus(): ?int
-    {
-        return $this->status;
-    }
-
-    public function setStatus(int $status): self
-    {
-        $this->status = $status;
-
-        return $this;
-    }
 }
+
