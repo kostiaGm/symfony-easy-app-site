@@ -6,8 +6,6 @@ use App\Controller\Traits\ActiveTrait;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\StatusInterface;
 
-
-use App\Entity\Site;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,17 +23,11 @@ class MenuController extends AbstractController
 
     private MenuRepository $menuRepository;
     private EntityManagerInterface $entityManager;
-    private ?Site $activeSite;
 
-    public function __construct(
-        MenuRepository $menuRepository,
-        EntityManagerInterface $entityManager,
-        Environment $twig
-    )
+    public function __construct(MenuRepository $menuRepository, EntityManagerInterface $entityManager)
     {
         $this->menuRepository = $menuRepository;
         $this->entityManager = $entityManager;
-        $this->activeSite = $twig->getGlobals()['activeSite'] ?? null;
     }
 
     /**
@@ -148,23 +140,23 @@ class MenuController extends AbstractController
         ]);
     }
 
-    public function treeMenu(?int $tree): Response
+    public function treeMenu(Request $request, ?int $tree): Response
     {
         return $this->render(
             'menu/tree_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId(), $tree)
+            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()), $tree)
         ]);
     }
 
-    public function leftMenu()
+    public function leftMenu(Request $request)
     {
         return $this->render(
             'menu/left_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId())
+            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()))
         ]);
     }
 
-    public function topMenu(int $rootId): Response
+    public function topMenu(Request $request, int $rootId): Response
     {
         $menu = $this->entityManager->find(Menu::class, $rootId);
         $items = [];
@@ -178,9 +170,10 @@ class MenuController extends AbstractController
             ;
         }
 
-        return $this->render('menu/top_menu.html.twig',
-            ['items' => $items]
-        );
+        return $this->render('menu/top_menu.html.twig',[
+            'activeSite' => $this->getParameter('site')[$request->getHost()] ?? '',
+            'items' => $items
+        ]);
     }
 
     public function breadcrumbs(NodeInterface $node, MenuRepository $menuRepository): Response

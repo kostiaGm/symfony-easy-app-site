@@ -3,38 +3,30 @@
 namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
-use App\Entity\Interfaces\NodeInterface;
+use App\Controller\Traits\FileUploadTrait;
+use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Page;
-use App\Entity\Site;
+use App\Entity\User;
 use App\Form\PageType;
-use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Twig\Environment;
+use Symfony\Component\String\Slugger\SluggerInterface;
+
 
 class PageController extends AbstractController
 {
-    use ActiveTrait;
+    use ActiveTrait, FileUploadTrait;
 
     private PageRepository $pageRepository;
-    private ?Site $activeSite;
+    private SluggerInterface $slugger;
 
-    public function __construct(PageRepository $pageRepository ,Environment $twig)
+    public function __construct(PageRepository $pageRepository, SluggerInterface $slugger)
     {
         $this->pageRepository = $pageRepository;
-        $this->activeSite = $twig->getGlobals()['activeSite'] ?? null;
-    }
-    /**
-     * @Route("/", name="app_page_min", methods={"GET"})
-     */
-    public function main(): Response
-    {
-        return $this->render('page/main.html.twig', [
-            'pages' => $this->pageRepository->findAll(),
-        ]);
+        $this->slugger = $slugger;
     }
 
     /**
@@ -57,6 +49,8 @@ class PageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $fileName = $this->uploadImage($form);
+            $page->setImage($fileName);
             $this->pageRepository->add($page, true);
 
             return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
@@ -87,6 +81,8 @@ class PageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $fileName = $this->uploadImage($form);
+            $this->removeImage($page->getImage());
             $this->pageRepository->add($page, true);
 
             return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
@@ -104,6 +100,7 @@ class PageController extends AbstractController
     public function delete(Request $request, Page $page): Response
     {
         if ($this->isCsrfTokenValid('delete'.$page->getId(), $request->request->get('_token'))) {
+            $this->removeImage($page->getImage());
             $this->pageRepository->remove($page, true);
         }
 
@@ -111,14 +108,39 @@ class PageController extends AbstractController
     }
 
     /**
+     * @Route("/", name="app_page_min", methods={"GET"})
+     */
+    public function main(): Response
+    {
+        return $this->render('page/main.html.twig', [
+            'pages' => $this->pageRepository->findAll(),
+        ]);
+    }
+
+    /**
+     * @Route("/technical-works", name="technical_works", methods={"GET"})
+     */
+    public function technicalWorks(Request $request): Response
+    {
+        $user = $this->getUser();
+
+        if (($this->getParameter('site')[$request->getHost()]['status']?? false) == StatusInterface::STATUS_ACTIVE
+            || (!empty($user) && in_array(User::ROLE_ADMIN, $user->getRoles()))) {
+            return $this->redirectToRoute('app_page_min');
+        }
+        return $this->render('page/technical_works.html.twig');
+    }
+
+    /**
      * @Route("/page/{slug}", requirements={"slug"="[a-z0-9\/\-]*"}, name="app_page_detail", methods={"GET"})
      */
-    public function detail(string $slug): Response
+    public function detail(Request $request, string $slug): Response
     {
-        $page = $this->pageRepository->getBySlug($this->getActiveSiteId(), $slug);
+        $page = $this->pageRepository->getBySlug($this->getActiveSiteId($request->getHost()), $slug);
         return $this->render('page/detail.html.twig', [
             'page' => $page
         ]);
     }
+
 }
 

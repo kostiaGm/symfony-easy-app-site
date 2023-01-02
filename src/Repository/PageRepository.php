@@ -48,12 +48,11 @@ class PageRepository extends ServiceEntityRepository
 
     public function getBySlug(int $siteId, string $slug): IsJoinMenuInterface
     {
-
         $queryBuilder = $this
             ->getQueryBuilder()
             ->innerJoin($this->getAlias().'.menu', 'm')
             ->andWhere('m.path=:slug')
-            ->andWhere('m.site=:m_site')
+            ->andWhere('m.siteId=:m_site')
             ->setParameter('slug', $slug)
             ->setParameter('m_site', $siteId)
         ;

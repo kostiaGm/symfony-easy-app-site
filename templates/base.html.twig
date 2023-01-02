@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>{% set activeSite = site is defined and app.request.getHost in site|keys ? attribute(site, app.request.getHost)%}
 <html>
 <head>
     <meta charset="UTF-8">
@@ -17,6 +17,7 @@
 <body>
 
 <div class="container">
+
     {# top menu #}
     {{ render(controller('App\\Controller\\MenuController::topMenu', {rootId: 1})) }}
 
@@ -25,7 +26,6 @@
             {# left menu #}
             {% include 'menu/admin_menu.html.twig' with ({items: [
                 {'route' : 'app_page_index', 'title': 'Page'},
-                {'route' : 'app_site_index', 'title': 'Site'},
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
                 {'route' : 'app_user_index', 'title': 'User'},
             ]}) %}

@@ -1,0 +1,21 @@
+parameters:
+  image:
+    size: {
+      small: {width: 75, height: 75, watermark: null},
+      middle: {width: 250, height: 250, watermark: null},
+      big: {width: 500, height: 500, watermark: null}
+    },
+    path: {
+      small: 'public/img/page/small',
+      middle: 'public/img/page/middle',
+      big: 'public/img/page/big',
+      origin: 'public/img/page/origin',
+    },
+    allowFormats: ['jpg', 'png'],
+    mimeTypes: [
+      'application/pdf',
+      'application/x-pdf',
+      'application/jpg',
+      'application/jpeg'
+    ],
+    maxSize: '5024k'

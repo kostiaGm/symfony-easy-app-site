@@ -3,16 +3,18 @@
 namespace App\Entity;
 
 use App\Entity\Interfaces\ChangeDataDayInterface;
+use App\Entity\Interfaces\ImageInterface;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Interfaces\IsOnMainPageInterface;
-use App\Entity\Interfaces\JoinSiteInterface;
 use App\Entity\Interfaces\PreviewBodyTextInterface;
+use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Traits\ChangeDataDayTrait;
+use App\Entity\Traits\ImageTrait;
 use App\Entity\Traits\IsJoinMenuTrait;
 use App\Entity\Traits\IsOnMainPageTrait;
-use App\Entity\Traits\JoinSiteTrait;
 use App\Entity\Traits\PreviewBodyTextTrait;
+use App\Entity\Traits\SiteTrait;
 use App\Entity\Traits\StatusTrait;
 use App\Repository\PageRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -25,10 +27,11 @@ class Page implements
     PreviewBodyTextInterface,
     StatusInterface,
     IsOnMainPageInterface,
-    JoinSiteInterface,
-    IsJoinMenuInterface
+    IsJoinMenuInterface,
+    SiteInterface,
+    ImageInterface
 {
-    use ChangeDataDayTrait, PreviewBodyTextTrait, StatusTrait, IsOnMainPageTrait, JoinSiteTrait, IsJoinMenuTrait;
+    use ChangeDataDayTrait, PreviewBodyTextTrait, StatusTrait, IsOnMainPageTrait, IsJoinMenuTrait, SiteTrait, ImageTrait;
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -46,7 +49,6 @@ class Page implements
      */
     private $menu;
 
-
     public function getId(): ?int
     {
         return $this->id;
@@ -63,7 +65,6 @@ class Page implements
 
         return $this;
     }
-
 
     public function getRenderPageRoute(): string
     {

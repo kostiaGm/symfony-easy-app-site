@@ -130,7 +130,7 @@ class MenuRepository extends ServiceEntityRepository
     {
         return $this
             ->getAllRootsQueryBuilder()
-            ->andWhere($this->getAlias() . ".site=:site")
+            ->andWhere($this->getAlias() . ".siteId=:site")
             ->setParameter("site", $siteId)
             ->getQuery()
             ->getResult();
@@ -140,7 +140,7 @@ class MenuRepository extends ServiceEntityRepository
     {
         $queryBuilder = $this
             ->getAllQueryBuilder()
-            ->andWhere($this->getAlias() . ".site=:site")
+            ->andWhere($this->getAlias() . ".siteId=:site")
             ->setParameter("site", $siteId);
 
         if ($treeId !== null) {
@@ -148,7 +148,6 @@ class MenuRepository extends ServiceEntityRepository
                 ->andWhere($this->getAlias() . ".tree=:tree")
                 ->setParameter("tree", $treeId);
         }
-
         return $queryBuilder->getQuery()
             ->getResult();
     }

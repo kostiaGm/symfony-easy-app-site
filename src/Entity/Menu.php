@@ -3,11 +3,12 @@
 namespace App\Entity;
 
 use App\Entity\Interfaces\ChangeDataDayInterface;
-use App\Entity\Interfaces\JoinSiteInterface;
 use App\Entity\Interfaces\NodeInterface;
+use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Traits\ChangeDataDayTrait;
 use App\Entity\Traits\NodeTrait;
+use App\Entity\Traits\SiteTrait;
 use App\Entity\Traits\StatusTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -34,7 +35,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  *          }
  *     )
  */
-class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, JoinSiteInterface
+class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, SiteInterface
 {
     public const SITE_PAGE_TYPE = 1;
     public const EXTERNAL_PAGE_TYPE = 2;
@@ -46,7 +47,7 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Jo
         self::SUB_ITEM_MENU_TYPE => 'Sub item menu',
     ];
 
-    use StatusTrait, ChangeDataDayTrait, NodeTrait;
+    use StatusTrait, ChangeDataDayTrait, NodeTrait, SiteTrait;
 
     /**
      * @ORM\Id
@@ -68,11 +69,6 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Jo
     private ?int $type = null;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Site::class, inversedBy="menus")
-     */
-    private ?Site $site = null;
-
-    /**
      * @ORM\OneToMany(targetEntity=Page::class, mappedBy="menu")
      */
     private $pages;
@@ -81,6 +77,8 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Jo
      * @ORM\Column(type="integer", nullable=true)
      */
     private $entityId;
+
+
 
     public function __construct()
     {
@@ -151,18 +149,6 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Jo
         $return = preg_replace('/\W+/', '-', $return);
         $return = strtolower($return);
         return $return;
-    }
-
-    public function getSite(): ?Site
-    {
-        return $this->site;
-    }
-
-    public function setSite(?Site $site): self
-    {
-        $this->site = $site;
-
-        return $this;
     }
 
     /**

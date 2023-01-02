@@ -1,0 +1,7 @@
+parameters:
+  site:
+    my-domain.dp.loc.wip: {
+       id: 1,
+       name: "my-domain",
+       status: 1
+    }

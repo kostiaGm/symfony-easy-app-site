@@ -2,8 +2,6 @@
 
 namespace App\Form;
 
-use App\Entity\Site;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use App\Entity\Menu;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -17,10 +15,7 @@ class MenuType extends AbstractType
     {
         $builder
             ->add('name')
-            ->add('site', EntityType::class, [
-                'class' => Site::class,
-                'choice_label' => 'name',
-            ])
+
             ->add('url', TextType::class, [
                     'required' => false
             ])
