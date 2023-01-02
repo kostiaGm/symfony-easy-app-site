@@ -20,5 +20,14 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    App\EventSubscriber\DatabaseActivitySubscriber:
+        tags:
+            -
+                name: 'doctrine.event_subscriber'
+                priority: 1
+
+                # you can also restrict listeners to a specific Doctrine connection
+                connection: 'default'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

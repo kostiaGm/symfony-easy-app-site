@@ -16,6 +16,7 @@ use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 
 class FirstInstallController extends AbstractController
 {
+    private const EXTENSIONS = ['php-intl'];
     /**
      * @Route("/first-install", name="app_first_install")
      */
@@ -31,7 +32,13 @@ class FirstInstallController extends AbstractController
         $firstInstallFile = $params->get('kernel.project_dir').DIRECTORY_SEPARATOR.'.first-install';
         $isError = false;
 
-        if (file_exists($firstInstallFile) && !is_writable($firstInstallFile)) {
+        foreach (self::EXTENSIONS as $extension) {
+            if (!extension_loaded($extension)) {
+                $this->addFlash('error', "Extension [ $extension ] is not installed");
+            }
+        }
+
+        if (!$isError && file_exists($firstInstallFile) && !is_writable($firstInstallFile)) {
             $isError = true;
             $this->addFlash('error', "File [ $firstInstallFile ] is not available to write");
         }
@@ -101,4 +108,5 @@ class FirstInstallController extends AbstractController
 
         return $this->render('first_install/index.html.twig', $renderParams);
     }
+
 }

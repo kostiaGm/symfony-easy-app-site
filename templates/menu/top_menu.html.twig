@@ -16,7 +16,10 @@
                         <a class="nav-link active" aria-current="page" href="/">Home</a>
                     {% endif %}
                 </li>
-                <li class="nav-item">
+                {% for item in items %}
+                    <a class="p-2 link-secondary" href="#">{{ item.name }}</a>
+                {% endfor %}
+                {#<li class="nav-item">
                     <a class="nav-link" href="#">Link</a>
                 </li>
                 <li class="nav-item dropdown">
@@ -32,12 +35,16 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link disabled">Disabled</a>
-                </li>
+                </li>#}
             </ul>
-            <form class="d-flex" role="search">
-                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
+            <div class="d-flex" >
+
+                {% if app.getUser.username is defined %}
+                    Hello {{ app.getUser.username }}! / <a href="{{ path('app_logout') }}">Logout</a>
+                {% else %}
+                    <a href="{{ path('app_login') }}">Login</a> / <a href="{{ path('app_register') }}">Registration</a>
+                {% endif %}
+            </div>
         </div>
     </div>
 </nav>

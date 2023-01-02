@@ -9,6 +9,7 @@ use http\Client\Request;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\RouterInterface;
@@ -24,6 +25,7 @@ class AppActionSubscriber implements EventSubscriberInterface
     private SiteRepository $siteRepository;
     private TokenStorageInterface $tokenStorage;
     private Environment $environment;
+    private RequestStack $requestStack;
 
     private const EXCLUDE_CONTROLLERS_PATTERN = '/FirstInstallController|error_controller|infoMessage/';
 
@@ -32,17 +34,23 @@ class AppActionSubscriber implements EventSubscriberInterface
         RouterInterface $router,
         SiteRepository $siteRepository,
         TokenStorageInterface $tokenStorage,
-        Environment $environment
+        Environment $environment,
+        RequestStack $requestStack
     ) {
         $this->params = $params;
         $this->router = $router;
         $this->siteRepository = $siteRepository;
         $this->tokenStorage = $tokenStorage;
         $this->environment = $environment;
+        $this->requestStack = $requestStack;
     }
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        if ($this->requestStack->getParentRequest()) {
+            return;
+        }
+
         $baseDir = $this->params->get('kernel.project_dir');
         $request = $event->getRequest();
         $controllerName = $request->get('_controller');
@@ -75,7 +83,7 @@ class AppActionSubscriber implements EventSubscriberInterface
     {
         $token = $this->tokenStorage->getToken();
         $isRedirectToInfoMessageRout = false;
-        if (!empty($site) && $site->getStatus() == Site::INACTIVE) {
+        if (!empty($site) && $site->getStatus() == Site::STATUS_INACTIVE) {
             $isRedirectToInfoMessageRout =
                 (!$token instanceof PostAuthenticationToken ||
                     !in_array(User::ROLE_ADMIN, $token->getRoleNames()));

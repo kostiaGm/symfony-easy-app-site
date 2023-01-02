@@ -4,16 +4,10 @@ namespace App\Entity\Interfaces;
 
 interface StatusInterface
 {
-    public const ACTIVE = 1;
-    public const INACTIVE = 2;
-    public const DELETED = 3;
-
-    public const STATUSES = [
-        self::ACTIVE => 'Active',
-        self::INACTIVE => 'Inactive',
-        self::DELETED => 'Deleted',
-    ];
+    public const STATUS_ACTIVE = 1;
+    public const STATUS_INACTIVE = 2;
 
     public function getStatus(): ?int;
     public function setStatus(int $status): self;
+    public static function getStatuses(): array;
 }

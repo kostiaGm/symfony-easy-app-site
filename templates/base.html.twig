@@ -18,14 +18,28 @@
 
 <div class="container">
     {# top menu #}
-    {% include 'menu/top_menu.html.twig' %}
+    {{ render(controller('App\\Controller\\MenuController::topMenu', {rootId: 1})) }}
 
     <div class="row align-items-start">
         <div class="col col-lg-3 col-md-12 col-sm-12">
             {# left menu #}
-            {% include 'menu/left_menu.html.twig' %}
+            {% include 'menu/admin_menu.html.twig' with ({items: [
+                {'route' : 'app_page_index', 'title': 'Page'},
+                {'route' : 'app_site_index', 'title': 'Site'},
+                {'route' : 'menu_admin_index', 'title': 'Menu'},
+                {'route' : 'app_user_index', 'title': 'User'},
+            ]}) %}
+
+            {{ render(controller('App\\Controller\\MenuController::leftMenu')) }}
+
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
+
+            {% if page.menu is defined %}
+                {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
+
+            {% endif %}
+
             {% include 'elements/flush.html.twig' %}
             {% block body %}{% endblock %}
         </div>

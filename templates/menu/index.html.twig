@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Menu Admin{% endblock %}
+
+{% block h1 %}Menu Admin{% endblock %}
+
+{% block body %}
+
+<div class="row">
+    <div class="col-12">
+        {% include 'menu/tree_block.html.twig' %}
+    </div>
+</div>
+
+{% endblock %}
