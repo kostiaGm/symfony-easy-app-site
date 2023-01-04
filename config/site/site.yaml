@@ -3,5 +3,7 @@ parameters:
     my-domain.dp.loc.wip: {
        id: 1,
        name: "my-domain",
-       status: 1
+       status: 1,
+       max_preview_pages_on_main: 5,
+       max_preview_pages: 5
     }

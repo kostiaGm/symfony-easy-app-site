@@ -5,6 +5,8 @@
 
 {% block body %}
 
+    {{ render(controller('App\\Controller\\PageController::preview', {page:page})) }}
+
     <table class="table">
         <tbody>
             <tr>

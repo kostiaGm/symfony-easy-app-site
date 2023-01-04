@@ -12,6 +12,7 @@ parameters:
 twig:
     globals:
         site: '%site%'
+        image: '%image%'
 
 services:
     # default configuration for services in *this* file

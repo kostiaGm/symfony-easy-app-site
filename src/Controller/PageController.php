@@ -4,19 +4,20 @@ namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
 use App\Controller\Traits\FileUploadTrait;
+use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Page;
 use App\Entity\Seo;
-use App\Entity\SeoItem;
 use App\Entity\User;
 use App\Form\PageType;
 use App\Form\SeoType;
+use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeoRepository;
-use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
@@ -50,6 +51,9 @@ class PageController extends AbstractController
     public function new(Request $request): Response
     {
         $page = new Page();
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $page->setSiteId($siteId);
+
         $form = $this->createForm(PageType::class, $page);
         $form->handleRequest($request);
 
@@ -82,14 +86,19 @@ class PageController extends AbstractController
      */
     public function edit(Request $request, Page $page): Response
     {
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $page->setSiteId($siteId);
+
         $form = $this->createForm(PageType::class, $page);
         $form->handleRequest($request);
-
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $fileName = $this->uploadImage($form);
-            $this->removeImage($page->getImage());
-            $page->setImage($fileName);
+            if (!empty($request->files->get('page')['uploadImage'])) {
+                $fileName = $this->uploadImage($form);
+                $this->removeImage($page->getImage());
+                $page->setImage($fileName);
+            }
+
             $this->pageRepository->add($page, true);
 
             return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
@@ -119,10 +128,31 @@ class PageController extends AbstractController
      */
     public function seo(Request $request, Page $page, SeoRepository $seoRepository): Response
     {
-
         $siteId = $this->getActiveSiteId($request->getHost());
         $seo = $seoRepository->getByEntity(Page::class, $siteId, $page->getId()) ?? new Seo();
-        $form = $this->createForm(SeoType::class, $seo, ['exclude' => ['entity', 'entityId']]);
+
+        $default = [];
+
+        if (!empty($page->getImage())) {
+            $imageParams = $this->getParameter('image');
+            $default['og:image'] = $page->getImage();
+            $default['og:image:url'] =
+                $request->getSchemeAndHttpHost() .
+                $imageParams['load_form_path']['small'].'/'.
+                $page->getImage();
+
+            $default['og:image:width'] = $imageParams['size']['small']['width'];
+            $default['og:image:height'] = $imageParams['size']['small']['height'];
+            $default['og:image:alt'] = $page->getName();
+        }
+
+
+        $form = $this->createForm(SeoType::class, $seo, [
+            'exclude' => ['entity', 'entityId'],
+            'default' => $default
+            ]
+        );
+
         $seo
             ->setEntity(Page::class)
             ->setEntityId($page->getId())
@@ -151,10 +181,25 @@ class PageController extends AbstractController
     /**
      * @Route("/", name="app_page_min", methods={"GET"})
      */
-    public function main(): Response
+    public function main(Request $request): Response
     {
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $limit = $this->getActiveSite($request->getHost())['max_preview_pages_on_main'] ?? 5;
+        $pages = $this->pageRepository->getPreviewOnMain($siteId, $limit) ?? [];
+
+        try {
+            $page = $this->pageRepository->getBySlug($siteId, '');
+        }
+        catch (NotFoundHttpException $exception) {
+
+        }
+        catch (\Throwable $exception) {
+            throw $exception;
+        }
+
         return $this->render('page/main.html.twig', [
-            'pages' => $this->pageRepository->findAll(),
+            'pages' => $pages,
+            'page' => $page
         ]);
     }
 
@@ -177,11 +222,41 @@ class PageController extends AbstractController
      */
     public function detail(Request $request, string $slug): Response
     {
-        $page = $this->pageRepository->getBySlug($this->getActiveSiteId($request->getHost()), $slug);
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $page = $this->pageRepository->getBySlug($siteId, $slug);
         return $this->render('page/detail.html.twig', [
             'page' => $page
         ]);
     }
 
+    public function preview(MenuRepository $menuRepository, ?Page $page, Request $request): Response
+    {
+        $pages = [];
+
+        $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+
+        if ($page->isIsPreview() && $page->getMenu() instanceof NodeInterface) {
+
+            $queryBuilder = $this
+                ->pageRepository
+                ->getQueryBuilder()
+                ->innerJoin($this->pageRepository->getAlias().".menu", $menuRepository->getAlias())
+            ;
+
+            $queryBuilder = $menuRepository
+                ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder);
+
+            $pages = $queryBuilder
+                ->orderBy($this->pageRepository->getAlias().".id")
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
+        }
+
+
+        return $this->render('page/preview.html.twig', [
+            'pages' => $pages
+        ]);
+    }
 }
 

@@ -63,7 +63,21 @@ class PageRepository extends ServiceEntityRepository
             throw new NotFoundHttpException("Page [ $slug ] not found");
         }
 
-
         return $result;
     }
+
+    public function getPreviewOnMain(int $siteId, int $limit): ?array
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilder()
+            ->andWhere("{$alias}.siteId=:siteId")->setParameter("siteId", $siteId)
+            ->andWhere("{$alias}.isOnMainPage=:isOnMainPage")->setParameter("isOnMainPage", true)
+            ->addOrderBy("{$alias}.id", "DESC")
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
 }

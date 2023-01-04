@@ -59,6 +59,16 @@ class Page implements
      */
     private $menu;
 
+    /**
+     * @ORM\Column(type="smallint", nullable=true)
+     */
+    private $previewDeep;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $isPreview;
+
 
 
     public function getId(): ?int
@@ -81,6 +91,30 @@ class Page implements
     public function getRenderPageRoute(): string
     {
         return 'app_page_detail';
+    }
+
+    public function getPreviewDeep(): ?int
+    {
+        return $this->previewDeep;
+    }
+
+    public function setPreviewDeep(?int $previewDeep): self
+    {
+        $this->previewDeep = $previewDeep;
+
+        return $this;
+    }
+
+    public function isIsPreview(): ?bool
+    {
+        return $this->isPreview;
+    }
+
+    public function setIsPreview(bool $isPreview): self
+    {
+        $this->isPreview = $isPreview;
+
+        return $this;
     }
 }
 

@@ -98,15 +98,28 @@ class MenuRepository extends ServiceEntityRepository
         return $this->find($parentId);
     }
 
-    public function getParentsByItemQueryBuilder(NodeInterface $menu): QueryBuilder
-    {
+    public function getParentsByItemQueryBuilder(
+        NodeInterface $menu,
+        ?int $deep = null,
+        ?QueryBuilder $queryBuilder = null
+    ): QueryBuilder {
+
         $alias = $this->getAlias();
 
-        return $this
-            ->getQueryBuilder()
+        $queryBuilder = $this
+            ->getQueryBuilder($queryBuilder)
             ->andWhere("{$alias}.lft<=:lft")->setParameter('lft', $menu->getLft())
             ->andWhere("{$alias}.rgt>=:rgt")->setParameter('rgt', $menu->getRgt())
             ->andWhere("{$alias}.tree=:tree")->setParameter('tree', $menu->getTree());
+
+        if ($deep !== null) {
+            $queryBuilder
+                ->andWhere("{$alias}.lvl=:deep")
+                ->setParameter("deep", $menu->getLvl() - $deep)
+            ;
+        }
+
+        return $queryBuilder;
     }
 
     public function updateUrlInSubElements(NodeInterface $menu, string $oldUrl): void

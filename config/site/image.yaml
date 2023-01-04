@@ -11,6 +11,14 @@ parameters:
       big: 'public/img/page/big',
       origin: 'public/img/page/origin',
     },
+
+    load_form_path: {
+      small: '/img/page/small',
+      middle: '/img/page/middle',
+      big: '/img/page/big',
+      origin: '/img/page/origin',
+    },
+
     allowFormats: ['jpg', 'png'],
     mimeTypes: [
       'application/pdf',

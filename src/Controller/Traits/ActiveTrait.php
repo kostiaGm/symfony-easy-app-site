@@ -4,8 +4,14 @@ namespace App\Controller\Traits;
 
 trait ActiveTrait
 {
-    public function getActiveSiteId(string $domain, int $default = 0): int
+    protected function getActiveSiteId(string $domain, int $default = 0): int
     {
-        return $this->getParameter('site')[$domain]['id'] ?? $default;
+        return $this->getActiveSite($domain)['id'] ?? $default;
+
+    }
+
+    protected function getActiveSite(string $domain): array
+    {
+        return $this->getParameter('site')[$domain] ?? [];
     }
 }

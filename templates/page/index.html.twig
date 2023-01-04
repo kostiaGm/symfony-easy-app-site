@@ -9,11 +9,10 @@
         <thead>
             <tr>
                 <th>Id</th>
+                <th>Image</th>
                 <th>Name</th>
                 <th>CreatedAt</th>
                 <th>UpdatedAt</th>
-                <th>Preview</th>
-                <th>Body</th>
                 <th>Status</th>
                 <th>actions</th>
             </tr>
@@ -23,14 +22,40 @@
             <tr>
                 <td>{{ page.id }}</td>
                 <td>{{ page.name }}</td>
+                <td>
+                    {% set url = '#' %}
+                    {% if page.image is not empty %}
+                        <a href="{{ url }}" title="{{ page.name }}" >
+                            <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.small }}/{{ page.image }}"
+                                 width="{{ image.size.small.width  }}"
+                                 height="{{ image.size.small.height  }}"
+                                 align="left"
+                                 class="m-2"
+                                 alt="{{ page.name }}"
+
+                            >
+                        </a>
+                    {% endif %}
+
+                </td>
                 <td>{{ page.createdAt ? page.createdAt|date('Y-m-d H:i:s') : '' }}</td>
                 <td>{{ page.updatedAt ? page.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ page.preview }}</td>
-                <td>{{ page.body }}</td>
+
+
                 <td>{{ page.status }}</td>
                 <td>
                     <a href="{{ path('app_page_show', {'id': page.id}) }}">show</a>
                     <a href="{{ path('app_page_edit', {'id': page.id}) }}">edit</a>
+                </td>
+            </tr>
+            <tr>
+                <th colspan="7">Body</th>
+            </tr>
+            <tr>
+                <td colspan="7" >
+                    <div style="max-height: 100px;overflow: hidden;">
+                    {{ page.body }}
+                    </div>
                 </td>
             </tr>
         {% else %}

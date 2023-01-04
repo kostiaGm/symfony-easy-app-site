@@ -7,9 +7,11 @@ use App\Entity\Page;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
@@ -42,6 +44,14 @@ class PageType extends AbstractType
             ->add('menu', EntityType::class, [
                 'class' => Menu::class,
                 'choice_label' => 'name',
+            ])
+            ->add('isOnMainPage', CheckboxType::class, [
+                'required' => false
+            ]) ->add('isPreview', CheckboxType::class, [
+                'required' => false
+            ])
+            ->add('previewDeep',TextType::class, [
+                'required' => false
             ])
             ->add('uploadImage', FileType::class, [
                 'label' => 'Image ('.implode(', ', $config['allowFormats']).')',

@@ -1,0 +1,37 @@
+{% for preview in pages %}
+    {% set url = '#' %}
+    {% set item = preview.menu %}
+
+    <div class="card mb-3" >
+
+
+        <div class="card-body">
+            {% if item.route is not empty%}
+                {% set url = path(item.route, {slug: item.path}) %}
+            {% elseif item.type == constant('App\\Entity\\Menu::SITE_PAGE_TYPE') %}
+                {% set url = app.request.getSchemeAndHttpHost ~ '/' ~ item.url %}
+            {% elseif item.type == constant('App\\Entity\\Menu::EXTERNAL_PAGE_TYPE') %}
+                {% set url = item.url %}
+            {% endif %}
+
+            <h5 class="card-title"><a href="{{ url }}" title="{{ preview.name }}" >{{ preview.name }}</a></h5>
+            {% if preview.image is not empty %}
+            <a href="{{ url }}" title="{{ preview.name }}" >
+                <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.small }}/{{ preview.image }}"
+                     width="{{ image.size.small.width  }}"
+                     height="{{ image.size.small.height  }}"
+                     align="left"
+                     class="m-2"
+                     alt="{{ preview.name }}"
+
+                >
+            </a>
+            {% endif %}
+            <p class="card-text">{{ preview.preview }}</p>
+
+
+
+            <a href="{{ url }}" title="{{ preview.name }}" class="btn btn-primary">Go details</a>
+        </div>
+    </div>
+{% endfor %}

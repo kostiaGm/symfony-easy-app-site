@@ -27,21 +27,22 @@ class TypeByConfig extends AbstractType
         $config = $this->params->get($options['configName']) ?? [];
 
         $builder->
-        addEventListener(FormEvents::POST_SET_DATA, function (FormEvent $event) use ($config) {
+        addEventListener(FormEvents::POST_SET_DATA, function (FormEvent $event) use ($config, $options) {
             $form = $event->getForm();
             $data = $event->getData()->getValues();
 
-
             foreach ($config as $item) {
-                if (empty($item['title'])) {
-                    continue;
-                }
-
                 $val = '';
+
                 foreach ($data as $value) {
                     if ($item['title'] == $value->getType()) {
                         $val = $value->getContent();
+
                     }
+                }
+
+                if (empty($val) && !empty($options['default'][$item['title']])) {
+                    $val = $options['default'][$item['title']];
                 }
 
                 $form->add(
@@ -62,6 +63,7 @@ class TypeByConfig extends AbstractType
     {
         $resolver->setDefaults([
             'configName' => '',
+            'default' => []
         ]);
     }
 }

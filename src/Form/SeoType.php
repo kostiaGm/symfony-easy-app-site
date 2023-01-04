@@ -25,7 +25,8 @@ class SeoType extends AbstractType
 
         $builder->add('items', TypeByConfig::class, [
             'configName' => 'seo',
-            'label' => false
+            'label' => false,
+            'default' => $options['default']
         ])->addEventListener(FormEvents::POST_SUBMIT, function (FormEvent $event) {
             $data = $event->getData();
             $dataItems = $data->getItems();
@@ -37,6 +38,7 @@ class SeoType extends AbstractType
                     $newItem = $item;
                 } else {
                     $newItem->setType($key);
+
                     $newItem->setContent($item);
                 }
 
@@ -54,7 +56,8 @@ class SeoType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Seo::class,
-            'exclude' => []
+            'exclude' => [],
+            'default' => []
         ]);
     }
 

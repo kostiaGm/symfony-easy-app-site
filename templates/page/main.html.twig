@@ -1,7 +1,22 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Page index{% endblock %}
+{% block title %}{{ page.name }}{% endblock %}
+{% block h1 %}{{ page.name }}{% endblock %}
 
 {% block body %}
-  main
+
+  {% include 'page/preview.html.twig' with {pages: pages} %}
+
+  <div class="card">
+
+    {% if page.image is not empty %}
+      <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.big }}/{{ page.image }}"
+           class="card-img-top" alt="{{ page.name }}">
+    {% endif %}
+    <div class="card-body">
+
+      <p class="card-text">{{ page.body }}</p>
+
+    </div>
+  </div>
 {% endblock %}
