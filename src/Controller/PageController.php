@@ -6,9 +6,14 @@ use App\Controller\Traits\ActiveTrait;
 use App\Controller\Traits\FileUploadTrait;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Page;
+use App\Entity\Seo;
+use App\Entity\SeoItem;
 use App\Entity\User;
 use App\Form\PageType;
+use App\Form\SeoType;
 use App\Repository\PageRepository;
+use App\Repository\SeoRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -81,8 +86,10 @@ class PageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
             $fileName = $this->uploadImage($form);
             $this->removeImage($page->getImage());
+            $page->setImage($fileName);
             $this->pageRepository->add($page, true);
 
             return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
@@ -106,6 +113,40 @@ class PageController extends AbstractController
 
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
     }
+
+    /**
+     * @Route("/admin/page/seo/{id}", name="app_page_seo", methods={"GET","POST"})
+     */
+    public function seo(Request $request, Page $page, SeoRepository $seoRepository): Response
+    {
+
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $seo = $seoRepository->getByEntity(Page::class, $siteId, $page->getId()) ?? new Seo();
+        $form = $this->createForm(SeoType::class, $seo, ['exclude' => ['entity', 'entityId']]);
+        $seo
+            ->setEntity(Page::class)
+            ->setEntityId($page->getId())
+            ->setSiteId($siteId)
+        ;
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $seoRepository->deleteSubItems($seo);
+            $seoRepository->add($seo, true);
+
+            $this->addFlash('success', 'Data Saved');
+            return $this->redirectToRoute('app_page_seo', ['id' => $page->getId()]);
+        }
+
+
+
+        return $this->renderForm('page/edit.html.twig', [
+            'page' => $page,
+            'form' => $form,
+        ]);
+    }
+
 
     /**
      * @Route("/", name="app_page_min", methods={"GET"})

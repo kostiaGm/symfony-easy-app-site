@@ -7,6 +7,7 @@ use App\Entity\Interfaces\ImageInterface;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Interfaces\IsOnMainPageInterface;
 use App\Entity\Interfaces\PreviewBodyTextInterface;
+use App\Entity\Interfaces\SeoInterface;
 use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Traits\ChangeDataDayTrait;
@@ -14,6 +15,7 @@ use App\Entity\Traits\ImageTrait;
 use App\Entity\Traits\IsJoinMenuTrait;
 use App\Entity\Traits\IsOnMainPageTrait;
 use App\Entity\Traits\PreviewBodyTextTrait;
+use App\Entity\Traits\SeoTrait;
 use App\Entity\Traits\SiteTrait;
 use App\Entity\Traits\StatusTrait;
 use App\Repository\PageRepository;
@@ -31,7 +33,15 @@ class Page implements
     SiteInterface,
     ImageInterface
 {
-    use ChangeDataDayTrait, PreviewBodyTextTrait, StatusTrait, IsOnMainPageTrait, IsJoinMenuTrait, SiteTrait, ImageTrait;
+    use ChangeDataDayTrait,
+        PreviewBodyTextTrait,
+        StatusTrait,
+        IsOnMainPageTrait,
+        IsJoinMenuTrait,
+        SiteTrait,
+        ImageTrait
+
+        ;
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -48,6 +58,8 @@ class Page implements
      * @ORM\ManyToOne(targetEntity=Menu::class, inversedBy="pages")
      */
     private $menu;
+
+
 
     public function getId(): ?int
     {
@@ -71,3 +83,4 @@ class Page implements
         return 'app_page_detail';
     }
 }
+

@@ -2,7 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Welcome!{% endblock %}</title>
+    <title>{% block title %}{% endblock %}</title>
+    {% if page is defined and page.id is not null %}
+        {{ render(controller('App\\Controller\\SeoController::detail', {entity: page, siteId: activeSite.id})) }}
+    {% endif %}
+
     <link rel="icon"
           href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
     {# Run `composer require symfony/webpack-encore-bundle` to start using Symfony UX #}
@@ -27,7 +31,8 @@
             {% include 'menu/admin_menu.html.twig' with ({items: [
                 {'route' : 'app_page_index', 'title': 'Page'},
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
-                {'route' : 'app_user_index', 'title': 'User'},
+                {'route' : 'menu_admin_index', 'title': 'Menu'},
+                {'route' : 'app_seo_index', 'title': 'Seo'},
             ]}) %}
 
             {{ render(controller('App\\Controller\\MenuController::leftMenu')) }}
@@ -35,10 +40,12 @@
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
 
-            {% if page.menu is defined %}
-                {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
-
+            {% if page.menu is defined and page.menu in not null %}
+               {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
+
+            <h1>{% block h1 %}{% endblock %}</h1>
+            <hr>
 
             {% include 'elements/flush.html.twig' %}
             {% block body %}{% endblock %}

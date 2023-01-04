@@ -1,0 +1,19 @@
+parameters:
+  seo:
+    [
+        {title: 'title'},
+        {title: 'description'},
+        {title: 'robots'},
+        {title: 'viewport'},
+        {title: 'og:title'},
+        {title: 'og:type'},
+        {title: 'og:image'},
+        {title: 'og:url'},
+        {title: 'og:description'},
+        {title: 'og:locale'},
+        {title: 'og:image:url'},
+        {title: 'og:image:type'},
+        {title: 'og:image:width'},
+        {title: 'og:image:height'},
+        {title: 'og:image:alt'}
+    ]

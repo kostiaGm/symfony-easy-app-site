@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Seo index{% endblock %}
+
+{% block body %}
+    <h1>Seo index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Entity</th>
+                <th>EntityId</th>
+                <th>SiteId</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for seo in seos %}
+            <tr>
+                <td>{{ seo.id }}</td>
+                <td>{{ seo.entity }}</td>
+                <td>{{ seo.entityId }}</td>
+                <td>{{ seo.siteId }}</td>
+                <td>
+                    <a href="{{ path('app_seo_show', {'id': seo.id}) }}">show</a>
+                    <a href="{{ path('app_seo_edit', {'id': seo.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_seo_new') }}">Create new</a>
+{% endblock %}
