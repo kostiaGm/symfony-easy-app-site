@@ -11,11 +11,11 @@
 
             </div>
         </div>
-
     </div>
     <div class="card-body">
         <div id="menu-jstree">
-           {{ render(controller('App\\Controller\\MenuController::treeMenuAdmin')) }}
+           {{ render(controller('App\\Controller\\MenuController::treeMenuAdmin', {request:app.request})) }}
+
         </div>
     </div>
 </div>

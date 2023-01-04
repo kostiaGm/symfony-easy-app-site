@@ -7,6 +7,7 @@ use App\Entity\Menu;
 use App\Entity\Page;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -46,15 +47,24 @@ class PageRepository extends ServiceEntityRepository
         }
     }
 
+    public function getAllQueryBuilder(int $siteId): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilder()
+            ->innerJoin("{$alias}.menu", 'm')
+            ->addSelect('m')
+            ->andWhere("{$alias}.siteId=:siteId")
+            ->setParameter('siteId', $siteId)
+            ;
+    }
+
     public function getBySlug(int $siteId, string $slug): IsJoinMenuInterface
     {
         $queryBuilder = $this
-            ->getQueryBuilder()
-            ->innerJoin($this->getAlias().'.menu', 'm')
+            ->getAllQueryBuilder($siteId)
             ->andWhere('m.path=:slug')
-            ->andWhere('m.siteId=:m_site')
             ->setParameter('slug', $slug)
-            ->setParameter('m_site', $siteId)
         ;
 
         $result = $queryBuilder->getQuery()->getOneOrNullResult();

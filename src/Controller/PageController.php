@@ -14,6 +14,7 @@ use App\Form\SeoType;
 use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeoRepository;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,10 +39,20 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page", name="app_page_index", methods={"GET"})
      */
-    public function index(): Response
+    public function index(Request $request, PaginatorInterface $paginator): Response
     {
+        $siteId = $this->getActiveSiteId($request->getHost());
+
+        $pagination = $paginator->paginate(
+            $this->pageRepository
+                ->getAllQueryBuilder($siteId)
+                ->getQuery(),
+            $request->query->getInt('page', 1),
+            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+        );
+
         return $this->render('page/index.html.twig', [
-            'pages' => $this->pageRepository->findAll(),
+            'pagination' => $pagination,
         ]);
     }
 
@@ -181,13 +192,25 @@ class PageController extends AbstractController
     /**
      * @Route("/", name="app_page_min", methods={"GET"})
      */
-    public function main(Request $request): Response
+    public function main(Request $request, PaginatorInterface $paginator): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $limit = $this->getActiveSite($request->getHost())['max_preview_pages_on_main'] ?? 5;
-        $pages = $this->pageRepository->getPreviewOnMain($siteId, $limit) ?? [];
-
         try {
+            $siteId = $this->getActiveSiteId($request->getHost());
+            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+            $query = $this
+                ->pageRepository
+                ->getAllQueryBuilder($siteId)
+                ->andWhere($this->pageRepository->getAlias().".isOnMainPage=:isOnMainPage")
+                ->setParameter("isOnMainPage", true)
+                ->addOrderBy($this->pageRepository->getAlias().".id", "DESC")
+                ->getQuery()
+            ;
+
+            $pages = $paginator->paginate(
+                $query,
+                $request->query->getInt('page', 1),
+                $limit
+            );
             $page = $this->pageRepository->getBySlug($siteId, '');
         }
         catch (NotFoundHttpException $exception) {
@@ -218,7 +241,7 @@ class PageController extends AbstractController
     }
 
     /**
-     * @Route("/page/{slug}", requirements={"slug"="[a-z0-9\/\-]*"}, name="app_page_detail", methods={"GET"})
+     * @Route("/pages/{slug}", requirements={"slug"="[a-z0-9\/\-]*"}, name="app_page_detail", methods={"GET"})
      */
     public function detail(Request $request, string $slug): Response
     {
@@ -229,13 +252,17 @@ class PageController extends AbstractController
         ]);
     }
 
-    public function preview(MenuRepository $menuRepository, ?Page $page, Request $request): Response
-    {
-        $pages = [];
+    public function preview(
+        Request $request,
+        Page $page,
+        MenuRepository $menuRepository,
+        PaginatorInterface $paginator
+    ): Response {
 
-        $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+        $pages = null;
 
         if ($page->isIsPreview() && $page->getMenu() instanceof NodeInterface) {
+            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
 
             $queryBuilder = $this
                 ->pageRepository
@@ -246,11 +273,15 @@ class PageController extends AbstractController
             $queryBuilder = $menuRepository
                 ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder);
 
-            $pages = $queryBuilder
+            $queryBuilder
                 ->orderBy($this->pageRepository->getAlias().".id")
-                ->setMaxResults($limit)
-                ->getQuery()
-                ->getResult();
+            ;
+
+            $pages = $paginator->paginate(
+                $queryBuilder->getQuery(),
+                $request->query->getInt('page', 1),
+                $limit
+            );
         }
 
 

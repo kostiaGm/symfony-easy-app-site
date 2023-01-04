@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Seo;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -61,5 +62,15 @@ class SeoRepository extends ServiceEntityRepository
         }
         $sql = "DELETE FROM seo_item WHERE seo_id=:seoId ";
         $this->getEntityManager()->getConnection()->executeQuery($sql, ['seoId' => $seo->getId()])->rowCount();
+    }
+
+    public function getAllQueryBuilder(int $siteId): QueryBuilder
+    {
+        $alias = $this->getAlias();
+
+        return $this
+            ->getQueryBuilder()
+            ->andWhere("{$alias}.siteId=:siteId")
+            ->setParameter("siteId", $siteId);
     }
 }

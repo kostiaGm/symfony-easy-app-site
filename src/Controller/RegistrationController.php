@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Traits\ActiveTrait;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Security\AppCustomAuthenticator;
@@ -16,6 +17,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class RegistrationController extends AbstractController
 {
+    use ActiveTrait;
     /**
      * @Route("/register", name="app_register")
      */
@@ -26,7 +28,10 @@ class RegistrationController extends AbstractController
         AppCustomAuthenticator $authenticator,
         EntityManagerInterface $entityManager
     ): Response {
+        $siteId = $this->getActiveSiteId($request->getHost());
         $user = new User();
+        $user->setSiteId($siteId);
+
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
 

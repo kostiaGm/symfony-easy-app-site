@@ -7,6 +7,7 @@ use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\StatusInterface;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,7 +16,7 @@ use App\Form\MenuType;
 use App\Repository\MenuRepository;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
+
 
 class MenuController extends AbstractController
 {
@@ -33,7 +34,7 @@ class MenuController extends AbstractController
     /**
      * @Route("/admin/menu", name="menu_admin_index")
      */
-    public function index(): Response
+    public function index(Request $request, PaginatorInterface $paginator): Response
     {
         return $this->render('menu/index.html.twig');
     }
@@ -129,14 +130,21 @@ class MenuController extends AbstractController
     }
 
 
-    public function treeMenuAdmin(): Response
+    public function treeMenuAdmin(Request $request, PaginatorInterface $paginator): Response
     {
+        $pagination = $paginator->paginate(
+            $this->menuRepository
+                ->getAllMenuQueryBuilder($this->getActiveSiteId($request->getHost()))
+                ->getQuery(),
+
+            $request->query->getInt('page', 1),
+            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+        );
+
         return $this->render(
              'menu/tree_menu_admin.html.twig', [
-            'items' => $this->menuRepository
-                ->getAllQueryBuilder()
-                ->getQuery()
-                ->getResult()
+            'request' => $request,
+            'pagination' => $pagination
         ]);
     }
 

@@ -29,9 +29,13 @@
             {% endif %}
             <p class="card-text">{{ preview.preview }}</p>
 
-
-
             <a href="{{ url }}" title="{{ preview.name }}" class="btn btn-primary">Go details</a>
         </div>
     </div>
 {% endfor %}
+
+{% if pages is not null %}
+<div class="navigation">
+    {{ knp_pagination_render(pages) }}
+</div>
+{% endif %}

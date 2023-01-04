@@ -1,5 +1,7 @@
+{% set page = request.query.get('page') is not empty ? request.query.get('page') : 1 %}
+
 {% set lvl = 0  %}
-{% for i,item in items %}
+{% for i,item in pagination %}
     {% if lvl == item.lvl %}
         </li>
     {% elseif item.lvl > lvl%}
@@ -11,7 +13,7 @@
             </li>
         {% endfor %}
     {% endif %}
-        <li class="list-group-item"> <a href="{{ path('menu_admin_edit', {id: item.id}) }}">{{ item.name }}</a>
+        <li class="list-group-item"> <a href="{{ path('menu_admin_edit', {id: item.id, page: page}) }}">{{ item.name }}</a>
         {% set lvl = item.lvl %}
 
 {% endfor %}
@@ -22,3 +24,7 @@
 
 
 {% endfor%}
+
+<div class="navigation">
+    {{ knp_pagination_render(pagination) }}
+</div>

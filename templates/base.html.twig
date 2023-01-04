@@ -31,8 +31,8 @@
             {% include 'menu/admin_menu.html.twig' with ({items: [
                 {'route' : 'app_page_index', 'title': 'Page'},
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
-                {'route' : 'menu_admin_index', 'title': 'Menu'},
                 {'route' : 'app_seo_index', 'title': 'Seo'},
+                {'route' : 'app_user_index', 'title': 'Users'},
             ]}) %}
 
             {{ render(controller('App\\Controller\\MenuController::leftMenu')) }}

@@ -38,12 +38,19 @@ class MenuRepository extends ServiceEntityRepository
         (new NestedSetsCreateDelete($this->getEntityManager(), Menu::class))->delete($node, $isSafeDelete);
     }
 
-    public function getAllQueryBuilder(): QueryBuilder
+    public function getAllQueryBuilder(?int $siteId = null): QueryBuilder
     {
         $queryBuilder = $this
             ->getQueryBuilder()
             ->orderBy($this->getAlias() . ".tree", "ASC")
             ->addOrderBy($this->getAlias() . ".lft", "ASC");
+
+        if ($siteId !== null) {
+            $queryBuilder
+                ->andWhere($this->getAlias().".siteId=:siteId")
+                ->setParameter("siteId", $siteId)
+            ;
+        }
 
         return $queryBuilder;
     }
@@ -122,10 +129,10 @@ class MenuRepository extends ServiceEntityRepository
         return $queryBuilder;
     }
 
-    public function updateUrlInSubElements(NodeInterface $menu, string $oldUrl): void
+    public function updateUrlInSubElements(NodeInterface $menu, string $oldUrl, ?int $siteId = null): void
     {
         $items = $this
-            ->getAllQueryBuilder()
+            ->getAllQueryBuilder($siteId)
             ->andWhere($this->getAlias() . ".tree=:tree")
             ->setParameter("tree", $menu->getTree())
             ->getQuery()
@@ -149,19 +156,24 @@ class MenuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getAllMenu(int $siteId, ?int $treeId = null): ?array
+    public function getAllMenuQueryBuilder(int $siteId, ?int $treeId = null): ?QueryBuilder
     {
-        $queryBuilder = $this
-            ->getAllQueryBuilder()
-            ->andWhere($this->getAlias() . ".siteId=:site")
-            ->setParameter("site", $siteId);
+        $queryBuilder = $this->getAllQueryBuilder($siteId);
 
         if ($treeId !== null) {
             $queryBuilder
                 ->andWhere($this->getAlias() . ".tree=:tree")
                 ->setParameter("tree", $treeId);
         }
-        return $queryBuilder->getQuery()
+
+        return $queryBuilder;
+    }
+
+    public function getAllMenu(int $siteId, ?int $treeId = null): ?array
+    {
+        return $this
+            ->getAllMenuQueryBuilder($siteId, $treeId)
+            ->getQuery()
             ->getResult();
     }
 }

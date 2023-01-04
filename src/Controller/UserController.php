@@ -2,32 +2,46 @@
 
 namespace App\Controller;
 
+use App\Controller\Traits\ActiveTrait;
 use App\Entity\User;
 use App\Form\UserType;
 use App\Repository\UserRepository;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * @Route("/user")
- */
 class UserController extends AbstractController
 {
+    use ActiveTrait;
     /**
-     * @Route("/", name="app_user_index", methods={"GET"})
+     * @Route("/admin/user", name="app_user_index", methods={"GET"})
      */
-    public function index(UserRepository $userRepository): Response
+    public function index(Request $request, UserRepository $userRepository, PaginatorInterface $paginator): Response
     {
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+
+        $query = $userRepository
+            ->getAllQueryBuilder($siteId)
+            ->getQuery()
+        ;
+
+        $pagination = $paginator->paginate(
+            $query,
+            $request->query->getInt('page', 1),
+            $limit
+        );
+
         return $this->render('user/index.html.twig', [
-            'users' => $userRepository->findAll(),
+            'pagination' => $pagination,
         ]);
     }
 
     /**
-     * @Route("/new", name="app_user_new", methods={"GET", "POST"})
+     * @Route("/admin/user/new", name="app_user_new", methods={"GET", "POST"})
      */
     public function new(Request $request, UserRepository $userRepository): Response
     {
@@ -48,7 +62,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/{id}", name="app_user_show", methods={"GET"})
+     * @Route("/admin/user/{id}", name="app_user_show", methods={"GET"})
      */
     public function show(User $user): Response
     {
@@ -58,7 +72,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/edit", name="app_user_edit", methods={"GET", "POST"})
+     * @Route("/admin/user/edit/{id}", name="app_user_edit", methods={"GET", "POST"})
      */
     public function edit(
         Request $request,
@@ -93,7 +107,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/{id}", name="app_user_delete", methods={"POST"})
+     * @Route("/admin/user/delete/{id}", name="app_user_delete", methods={"POST"})
      */
     public function delete(Request $request, User $user, UserRepository $userRepository): Response
     {

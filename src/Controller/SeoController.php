@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use App\Controller\Traits\ActiveTrait;
 use App\Entity\Seo;
 use App\Form\SeoType;
 use App\Repository\SeoRepository;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,13 +14,25 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SeoController extends AbstractController
 {
+    use ActiveTrait;
     /**
      * @Route("/admin/seo", name="app_seo_index", methods={"GET"})
      */
-    public function index(SeoRepository $seoRepository): Response
+    public function index(Request $request, PaginatorInterface $paginator, SeoRepository $seoRepository): Response
     {
+        $siteId = $this->getActiveSiteId($request->getHost());
+
+        $pagination = $paginator->paginate(
+            $seoRepository
+                ->getAllQueryBuilder($siteId)
+                ->addOrderBy($seoRepository->getAlias().".id", "DESC")
+                ->getQuery(),
+
+            $request->query->getInt('page', 1),
+            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+        );
         return $this->render('seo/index.html.twig', [
-            'seos' => $seoRepository->findAll(),
+            'pagination' => $pagination,
         ]);
     }
 

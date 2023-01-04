@@ -42,6 +42,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     private $email;
 
+    /**
+     * @ORM\Column(type="integer")
+     */
+    private $siteId;
+
     public const ROLE_ADMIN = 'ROLE_ADMIN';
     public const ROLE_USER = 'ROLE_USER';
 
@@ -142,6 +147,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): self
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    public function getSiteId(): ?int
+    {
+        return $this->siteId;
+    }
+
+    public function setSiteId(int $siteId): self
+    {
+        $this->siteId = $siteId;
 
         return $this;
     }

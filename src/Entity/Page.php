@@ -23,6 +23,15 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass=PageRepository::class)
+ * @ORM\Table(
+ *     indexes={
+ *          @ORM\Index(
+ *                  name="is_on_main_page", columns={"is_on_main_page"},
+ *                  name="site_id", columns={"site_id"},
+ *                  name="menu_id", columns={"menu_id"}
+ *              )
+ *          }
+ *     )
  */
 class Page implements
     ChangeDataDayInterface,
