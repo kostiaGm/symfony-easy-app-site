@@ -5,16 +5,19 @@ namespace App\Controller;
 use App\Controller\Traits\ActiveTrait;
 use App\Controller\Traits\FileUploadTrait;
 use App\Entity\Interfaces\NodeInterface;
-use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Page;
 use App\Entity\Seo;
-use App\Entity\User;
+use App\EventSubscriberService\Interfaces\DBSMenuInterface;
+use App\Exceptions\NestedSetsException;
+use App\Exceptions\NestedSetsMoveUnderSelfException;
+use App\Exceptions\NestedSetsNodeNotFoundException;
 use App\Form\PageType;
 use App\Form\SeoType;
 use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeoRepository;
 use Knp\Component\Pager\PaginatorInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,11 +32,18 @@ class PageController extends AbstractController
 
     private PageRepository $pageRepository;
     private SluggerInterface $slugger;
+    private LoggerInterface $logger;
 
-    public function __construct(PageRepository $pageRepository, SluggerInterface $slugger)
+    private const SUCCESS_MESSAGE = 'Page saved';
+    private const SUCCESS_SEO_MESSAGE = 'SEO saved';
+    private const DELETE_MESSAGE = 'Page deleted';
+    private const ERROR_MESSAGE = "Error! Page not saved";
+
+    public function __construct(PageRepository $pageRepository, SluggerInterface $slugger, LoggerInterface $logger)
     {
         $this->pageRepository = $pageRepository;
         $this->slugger = $slugger;
+        $this->logger = $logger;
     }
 
     /**
@@ -67,11 +77,16 @@ class PageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $fileName = $this->uploadImage($form);
-            $page->setImage($fileName);
-            $this->pageRepository->add($page, true);
-
-            return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
+            try {
+                $fileName = $this->uploadImage($form);
+                $page->setImage($fileName);
+                $this->pageRepository->add($page, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->renderForm('page/new.html.twig', [
@@ -93,7 +108,12 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page/edit/{id}", name="app_page_edit", methods={"GET", "POST"})
      */
-    public function edit(Request $request, Page $page, MenuRepository $menuRepository): Response
+    public function edit(
+        Request          $request,
+        Page             $page,
+        MenuRepository   $menuRepository,
+        DBSMenuInterface $dBSMenu
+    ): Response
     {
         $form = $this->createForm(PageType::class, $page);
         $oidMenu = $page->getMenu();
@@ -101,23 +121,31 @@ class PageController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            if ($page->getMenu() === null && !empty($oidMenu)) {
-                $menuRepository->delete($oidMenu);
+            try {
 
-            } elseif (!empty($page->getMenu()) && !empty($oidMenu) && $page->getMenu()->getId() != $oidMenu->getId()) {
-                $menuRepository->move($oidMenu, $page->getMenu());
+                if (empty($oidMenu)) {
+                    $dBSMenu->create($page);
+                } elseif (!empty($page->getMenu()) && !empty($oidMenu) && $page->getMenu()->getId() != $oidMenu->getId()) {
+                    $menuRepository->move($oidMenu, $page->getMenu());
+                }
+
+                if (!empty($request->files->get('page')['uploadImage'])) {
+                    $fileName = $this->uploadImage($form);
+                    $this->removeImage($page->getImage());
+                    $page->setImage($fileName);
+                }
+
+                $this->pageRepository->add($page, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
+
+            } catch (NestedSetsException | NestedSetsMoveUnderSelfException | NestedSetsNodeNotFoundException $e) {
+                $this->addFlash("error", $e->getMessage());
+                $this->logger->error($e->getMessage());
+            } catch (\Throwable $e) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($e->getMessage());
             }
-
-
-            if (!empty($request->files->get('page')['uploadImage'])) {
-                $fileName = $this->uploadImage($form);
-                $this->removeImage($page->getImage());
-                $page->setImage($fileName);
-            }
-
-            $this->pageRepository->add($page, true);
-
-            return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
         }
 
         return $this->renderForm('page/edit.html.twig', [
@@ -131,9 +159,15 @@ class PageController extends AbstractController
      */
     public function delete(Request $request, Page $page): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$page->getId(), $request->request->get('_token'))) {
-            $this->removeImage($page->getImage());
-            $this->pageRepository->remove($page, true);
+        if ($this->isCsrfTokenValid('delete' . $page->getId(), $request->request->get('_token'))) {
+            try {
+                $this->removeImage($page->getImage());
+                $this->pageRepository->remove($page, true);
+                $this->addFlash('success', self::DELETE_MESSAGE);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
@@ -154,7 +188,7 @@ class PageController extends AbstractController
             $default['og:image'] = $page->getImage();
             $default['og:image:url'] =
                 $request->getSchemeAndHttpHost() .
-                $imageParams['load_form_path']['small'].'/'.
+                $imageParams['load_form_path']['small'] . '/' .
                 $page->getImage();
 
             $default['og:image:width'] = $imageParams['size']['small']['width'];
@@ -164,28 +198,29 @@ class PageController extends AbstractController
 
 
         $form = $this->createForm(SeoType::class, $seo, [
-            'exclude' => ['entity', 'entityId'],
-            'default' => $default
+                'exclude' => ['entity', 'entityId'],
+                'default' => $default
             ]
         );
 
         $seo
             ->setEntity(Page::class)
             ->setEntityId($page->getId())
-            ->setSiteId($siteId)
-        ;
+            ->setSiteId($siteId);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $seoRepository->deleteSubItems($seo);
-            $seoRepository->add($seo, true);
-
-            $this->addFlash('success', 'Data Saved');
-            return $this->redirectToRoute('app_page_seo', ['id' => $page->getId()]);
+            try {
+                $seoRepository->deleteSubItems($seo);
+                $seoRepository->add($seo, true);
+                $this->addFlash('success', self::SUCCESS_SEO_MESSAGE);
+                return $this->redirectToRoute('app_page_seo', ['id' => $page->getId()]);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
-
-
 
         return $this->renderForm('page/edit.html.twig', [
             'page' => $page,
@@ -205,11 +240,10 @@ class PageController extends AbstractController
             $query = $this
                 ->pageRepository
                 ->getAllQueryBuilder($siteId)
-                ->andWhere($this->pageRepository->getAlias().".isOnMainPage=:isOnMainPage")
+                ->andWhere($this->pageRepository->getAlias() . ".isOnMainPage=:isOnMainPage")
                 ->setParameter("isOnMainPage", true)
-                ->addOrderBy($this->pageRepository->getAlias().".id", "DESC")
-                ->getQuery()
-            ;
+                ->addOrderBy($this->pageRepository->getAlias() . ".id", "DESC")
+                ->getQuery();
 
             $pages = $paginator->paginate(
                 $query,
@@ -220,11 +254,9 @@ class PageController extends AbstractController
                 'id' => $this->getActiveSite($request->getHost())['main_page_entity_id'] ?? 0,
                 'siteId' => $siteId
             ]);
-        }
-        catch (NotFoundHttpException $exception) {
+        } catch (NotFoundHttpException $exception) {
 
-        }
-        catch (\Throwable $exception) {
+        } catch (\Throwable $exception) {
             throw $exception;
         }
 
@@ -247,9 +279,9 @@ class PageController extends AbstractController
     }
 
     public function preview(
-        Request $request,
-        Page $page,
-        MenuRepository $menuRepository,
+        Request            $request,
+        Page               $page,
+        MenuRepository     $menuRepository,
         PaginatorInterface $paginator
     ): Response {
 
@@ -261,15 +293,13 @@ class PageController extends AbstractController
             $queryBuilder = $this
                 ->pageRepository
                 ->getQueryBuilder()
-                ->innerJoin($this->pageRepository->getAlias().".menu", $menuRepository->getAlias())
-            ;
+                ->innerJoin($this->pageRepository->getAlias() . ".menu", $menuRepository->getAlias());
 
             $queryBuilder = $menuRepository
                 ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder);
 
             $queryBuilder
-                ->orderBy($this->pageRepository->getAlias().".id")
-            ;
+                ->orderBy($this->pageRepository->getAlias() . ".id");
 
             $pages = $paginator->paginate(
                 $queryBuilder->getQuery(),

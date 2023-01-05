@@ -5,7 +5,7 @@ namespace App\Form;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Menu;
 use App\Entity\Page;
-use App\Lib\Traits\ActiveSiteTrait;
+use App\Service\Traits\ActiveSiteTrait;
 use App\Repository\MenuRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;

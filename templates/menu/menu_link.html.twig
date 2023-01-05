@@ -1,0 +1,10 @@
+{% set url = '#' %}
+
+{% if item.route is not empty %}
+    {% set url = path(item.route, {slug: item.path}) %}
+{% elseif item.type == constant('App\\Entity\\Menu::SITE_PAGE_TYPE') %}
+    {% set url = app.request.getSchemeAndHttpHost ~ '/' ~ item.url %}
+{% elseif item.type == constant('App\\Entity\\Menu::EXTERNAL_PAGE_TYPE') %}
+    {% set url = item.url %}
+{% endif %}
+<a class="{{ linkClass is defined ? linkClass }}" href="{{ url }}">{{ item.name }}</a>

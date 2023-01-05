@@ -2,11 +2,12 @@
 
 namespace App\Controller;
 
-use App\Controller\Traits\ActiveTrait;
 use App\Entity\User;
 use App\Form\UserType;
 use App\Repository\UserRepository;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Knp\Component\Pager\PaginatorInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,21 +16,40 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
 {
-    use ActiveTrait;
+    private PaginatorInterface $paginator;
+    private UserRepository $userRepository;
+
+    private ActiveSiteServiceInterface $activeSiteService;
+    private LoggerInterface $logger;
+
+    private const SUCCESS_MESSAGE = 'SEO saved';
+    private const DELETE_MESSAGE = 'SEO deleted';
+    private const ERROR_MESSAGE = "Error! SEO not saved";
+
+    public function __construct(
+        PaginatorInterface $paginator,
+        UserRepository $userRepository,
+        ActiveSiteServiceInterface $activeSiteService,
+        LoggerInterface $logger
+    ) {
+        $this->paginator = $paginator;
+        $this->userRepository = $userRepository;
+        $this->activeSiteService = $activeSiteService;
+        $this->logger = $logger;
+    }
+
     /**
      * @Route("/admin/user", name="app_user_index", methods={"GET"})
      */
-    public function index(Request $request, UserRepository $userRepository, PaginatorInterface $paginator): Response
+    public function index(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
-
-        $query = $userRepository
-            ->getAllQueryBuilder($siteId)
+        $limit = $this->activeSiteService->get()['max_preview_pages'] ?? 5;
+        $query = $this->userRepository
+            ->getAllQueryBuilder($this->activeSiteService->getId())
             ->getQuery()
         ;
 
-        $pagination = $paginator->paginate(
+        $pagination = $this->paginator->paginate(
             $query,
             $request->query->getInt('page', 1),
             $limit
@@ -43,16 +63,21 @@ class UserController extends AbstractController
     /**
      * @Route("/admin/user/new", name="app_user_new", methods={"GET", "POST"})
      */
-    public function new(Request $request, UserRepository $userRepository): Response
+    public function new(Request $request): Response
     {
         $user = new User();
         $form = $this->createForm(UserType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $userRepository->add($user, true);
-
-            return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+            try {
+                $this->userRepository->add($user, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);;
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->renderForm('user/new.html.twig', [
@@ -94,9 +119,14 @@ class UserController extends AbstractController
                 );
             }
 
-            $userRepository->add($user, true);
-
-            return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+            try {
+                $this->userRepository->add($user, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
 
@@ -112,7 +142,13 @@ class UserController extends AbstractController
     public function delete(Request $request, User $user, UserRepository $userRepository): Response
     {
         if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
-            $userRepository->remove($user, true);
+            try {
+                $userRepository->remove($user, true);
+                $this->addFlash('success', self::DELETE_MESSAGE);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);

@@ -22,7 +22,7 @@
         {% for page in pagination %}
             <tr>
                 <td>{{ page.id }}</td>
-                <td>{{ page.name }}</td>
+
                 <td>
                     {% set url = '#' %}
                     {% if page.image is not empty %}
@@ -37,7 +37,7 @@
                             >
                         </a>
                     {% endif %}
-
+                <td>{{ page.name }}</td>
                 </td>
                 <td>{{ page.createdAt ? page.createdAt|date('Y-m-d H:i:s') : '' }}</td>
                 <td>{{ page.updatedAt ? page.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
@@ -49,16 +49,7 @@
                     <a href="{{ path('app_page_edit', {'id': page.id}) }}">edit</a>
                 </td>
             </tr>
-            <tr>
-                <th colspan="7">Body</th>
-            </tr>
-            <tr>
-                <td colspan="7" >
-                    <div style="max-height: 100px;overflow: hidden;">
-                    {{ page.body }}
-                    </div>
-                </td>
-            </tr>
+
         {% else %}
             <tr>
                 <td colspan="9">no records found</td>

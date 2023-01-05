@@ -4,7 +4,7 @@ namespace App\EventSubscriber;
 
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\User;
-use App\Lib\Traits\ActiveSiteTrait;
+use App\Service\Traits\ActiveSiteTrait;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;

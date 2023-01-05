@@ -2,12 +2,12 @@
 
 namespace App\Controller;
 
-use App\Controller\Traits\ActiveTrait;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\StatusInterface;
-
+use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,15 +20,25 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class MenuController extends AbstractController
 {
-    use ActiveTrait;
-
     private MenuRepository $menuRepository;
     private EntityManagerInterface $entityManager;
+    private ActiveSiteServiceInterface $activeSiteService;
+    private LoggerInterface $logger;
 
-    public function __construct(MenuRepository $menuRepository, EntityManagerInterface $entityManager)
-    {
+    private const SUCCESS_MESSAGE = 'Menu saved';
+    private const DELETE_MESSAGE = 'Menu deleted';
+    private const ERROR_MESSAGE = "Error! Menu not saved";
+
+    public function __construct(
+        MenuRepository $menuRepository,
+        EntityManagerInterface $entityManager,
+        ActiveSiteServiceInterface $activeSiteService,
+        LoggerInterface $logger
+    ) {
         $this->menuRepository = $menuRepository;
         $this->entityManager = $entityManager;
+        $this->activeSiteService = $activeSiteService;
+        $this->logger = $logger;
     }
 
     /**
@@ -55,10 +65,11 @@ class MenuController extends AbstractController
             try {
                 $menu->setUrl($menu->getTransliteratedUrl());
                 $this->menuRepository->create($menu);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('menu_admin_index');
             } catch (\Throwable $exception) {
-                throw $exception;
-                $this->addFlash("Error", "Error");
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
             }
         }
 
@@ -83,12 +94,12 @@ class MenuController extends AbstractController
             try {
                 $menu->setUrl($menu->getTransliteratedUrl());
                 $menu->setPath($parent->getUrl());
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
                 $this->menuRepository->create($menu, $parent);
-
                 return $this->redirectToRoute('menu_admin_index');
             } catch (\Throwable $exception) {
-                throw $exception;
-                $this->addFlash("Error", "Error");
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
             }
         }
 
@@ -105,21 +116,22 @@ class MenuController extends AbstractController
     {
         $menu->setStatus(StatusInterface::STATUS_ACTIVE);
         $menu->setUpdatedAt(new \DateTime('now'));
-        $menuOldUrl = $menu->getUrl();
+        $menuOldUrl = $menu;
 
         $form = $this->createForm(MenuType::class, $menu);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
             try {
                 $menu->setUrl($menu->getTransliteratedUrl());
-                $this->menuRepository->updateUrlInSubElements($menu, $menuOldUrl);
+                $this->menuRepository->updateUrlInSubElements($menu, $menuOldUrl->getUrl());
                 $this->entityManager->flush();
-
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('menu_admin_index');
             } catch (\Throwable $exception) {
-                throw $exception;
-                $this->addFlash("Error", "Error");
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
             }
         }
 
@@ -134,11 +146,11 @@ class MenuController extends AbstractController
     {
         $pagination = $paginator->paginate(
             $this->menuRepository
-                ->getAllMenuQueryBuilder($this->getActiveSiteId($request->getHost()))
+                ->getAllMenuQueryBuilder($this->activeSiteService->getId())
                 ->getQuery(),
 
             $request->query->getInt('page', 1),
-            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+            $this->activeSiteService->get()['max_preview_pages'] ?? 5
         );
 
         return $this->render(
@@ -152,7 +164,7 @@ class MenuController extends AbstractController
     {
         return $this->render(
             'menu/tree_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()))
+            'items' => $this->menuRepository->getAllMenu($this->activeSiteService->get())
         ]);
     }
 
@@ -160,32 +172,27 @@ class MenuController extends AbstractController
     {
         return $this->render(
             'menu/left_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()), [
+            'items' => $this->menuRepository->getAllMenu($this->activeSiteService->getId(), [
                 'isLeftMenu' => true
-            ])
+            ]),
+            'request' => $request
         ]);
     }
 
     public function topMenu(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $activeSite = $this->getActiveSite($request->getHost());
-        $items = $this->menuRepository->getAllMenu($siteId, ['isTopMenu' => true]);
-
+        $items = $this->menuRepository->getAllMenu($this->activeSiteService->getId(), ['isTopMenu' => true]);
         return $this->render('menu/top_menu.html.twig',[
-            'activeSite' => $activeSite ?? '',
+            'activeSite' => $this->activeSiteService->get(),
             'items' => $items
         ]);
     }
 
     public function bottomMenu(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $activeSite = $this->getActiveSite($request->getHost());
-        $items = $this->menuRepository->getAllMenu($siteId, ['isBottomMenu' => true]);
-
+        $items = $this->menuRepository->getAllMenu($this->activeSiteService->getId(), ['isBottomMenu' => true]);
         return $this->render('menu/bottom_menu.html.twig',[
-            'activeSite' => $activeSite ?? '',
+            'activeSite' => $this->activeSiteService->get(),
             'items' => $items
         ]);
     }

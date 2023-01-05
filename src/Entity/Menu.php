@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Entity\Interfaces\ChangeDataDayInterface;
+use App\Entity\Interfaces\MenuInterface;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\OwnerInterface;
 use App\Entity\Interfaces\SiteInterface;
@@ -42,7 +43,7 @@ class Menu implements
     StatusInterface,
     ChangeDataDayInterface,
     SiteInterface,
-    OwnerInterface
+    OwnerInterface, MenuInterface
 {
     public const SITE_PAGE_TYPE = 1;
     public const EXTERNAL_PAGE_TYPE = 2;
@@ -94,17 +95,17 @@ class Menu implements
     /**
      * @ORM\Column(type="boolean")
      */
-    private $isTopMenu;
+    private $isTopMenu = false;
 
     /**
      * @ORM\Column(type="boolean")
      */
-    private $isLeftMenu;
+    private $isLeftMenu = false;
 
     /**
      * @ORM\Column(type="boolean")
      */
-    private $isBottomMenu;
+    private $isBottomMenu = false;
 
 
 

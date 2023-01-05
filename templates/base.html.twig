@@ -35,7 +35,7 @@
                 {'route' : 'app_user_index', 'title': 'Users'},
             ]}) %}
 
-            {{ render(controller('App\\Controller\\MenuController::leftMenu')) }}
+            {{ render(controller('App\\Controller\\MenuController::leftMenu', {request: app.request})) }}
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">

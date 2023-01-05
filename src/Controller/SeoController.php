@@ -2,11 +2,12 @@
 
 namespace App\Controller;
 
-use App\Controller\Traits\ActiveTrait;
 use App\Entity\Seo;
 use App\Form\SeoType;
 use App\Repository\SeoRepository;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Knp\Component\Pager\PaginatorInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,23 +15,44 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SeoController extends AbstractController
 {
-    use ActiveTrait;
+    private PaginatorInterface $paginator;
+    private SeoRepository $seoRepository;
+    private ActiveSiteServiceInterface $activeSiteService;
+    private LoggerInterface $logger;
+
+    private const SUCCESS_MESSAGE = 'SEO saved';
+    private const DELETE_MESSAGE = 'SEO deleted';
+    private const ERROR_MESSAGE = "Error! SEO not saved";
+
+    public function __construct(
+        PaginatorInterface $paginator,
+        SeoRepository $seoRepository,
+        ActiveSiteServiceInterface $activeSiteService,
+        LoggerInterface $logger
+    ) {
+        $this->paginator = $paginator;
+        $this->seoRepository = $seoRepository;
+        $this->activeSiteService = $activeSiteService;
+        $this->logger = $logger;
+    }
+
     /**
      * @Route("/admin/seo", name="app_seo_index", methods={"GET"})
      */
-    public function index(Request $request, PaginatorInterface $paginator, SeoRepository $seoRepository): Response
+    public function index(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
+        $siteId = $this->activeSiteService->getId();
 
-        $pagination = $paginator->paginate(
-            $seoRepository
+        $pagination = $this->paginator->paginate(
+            $this->seoRepository
                 ->getAllQueryBuilder($siteId)
-                ->addOrderBy($seoRepository->getAlias().".id", "DESC")
+                ->addOrderBy($this->seoRepository->getAlias().".id", "DESC")
                 ->getQuery(),
 
             $request->query->getInt('page', 1),
-            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+            $this->activeSiteService->get()['max_preview_pages'] ?? 5
         );
+
         return $this->render('seo/index.html.twig', [
             'pagination' => $pagination,
         ]);
@@ -46,9 +68,14 @@ class SeoController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $seoRepository->add($seo, true);
-
-            return $this->redirectToRoute('app_seo_index', [], Response::HTTP_SEE_OTHER);
+            try {
+                $seoRepository->add($seo, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_seo_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->renderForm('seo/new.html.twig', [
@@ -76,9 +103,14 @@ class SeoController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $seoRepository->add($seo, true);
-
-            return $this->redirectToRoute('app_seo_index', [], Response::HTTP_SEE_OTHER);
+            try {
+                $seoRepository->add($seo, true);
+                $this->addFlash('success', self::SUCCESS_MESSAGE);
+                return $this->redirectToRoute('app_seo_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->renderForm('seo/edit.html.twig', [
@@ -93,7 +125,13 @@ class SeoController extends AbstractController
     public function delete(Request $request, Seo $seo, SeoRepository $seoRepository): Response
     {
         if ($this->isCsrfTokenValid('delete'.$seo->getId(), $request->request->get('_token'))) {
-            $seoRepository->remove($seo, true);
+            try {
+                $seoRepository->remove($seo, true);
+                $this->addFlash('success', self::DELETE_MESSAGE);
+            } catch (\Throwable $exception) {
+                $this->addFlash("error", self::ERROR_MESSAGE);
+                $this->logger->error($exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_seo_index', [], Response::HTTP_SEE_OTHER);

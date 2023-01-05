@@ -2,7 +2,7 @@
 
 namespace App\Controller\Traits;
 
-use App\Lib\ImageOptimizer;
+use App\Service\ImageOptimizer;
 use Symfony\Component\Form\FormInterface;
 
 trait FileUploadTrait

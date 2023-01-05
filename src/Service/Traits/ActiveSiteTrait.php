@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Lib\Traits;
+namespace App\Service\Traits;
 
 trait ActiveSiteTrait
 {
