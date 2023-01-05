@@ -62,8 +62,6 @@ class PageController extends AbstractController
     public function new(Request $request): Response
     {
         $page = new Page();
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $page->setSiteId($siteId);
 
         $form = $this->createForm(PageType::class, $page);
         $form->handleRequest($request);
@@ -95,14 +93,21 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page/edit/{id}", name="app_page_edit", methods={"GET", "POST"})
      */
-    public function edit(Request $request, Page $page): Response
+    public function edit(Request $request, Page $page, MenuRepository $menuRepository): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $page->setSiteId($siteId);
-
         $form = $this->createForm(PageType::class, $page);
+        $oidMenu = $page->getMenu();
+
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
+
+            if ($page->getMenu() === null && !empty($oidMenu)) {
+                $menuRepository->delete($oidMenu);
+
+            } elseif (!empty($page->getMenu()) && !empty($oidMenu) && $page->getMenu()->getId() != $oidMenu->getId()) {
+                $menuRepository->move($oidMenu, $page->getMenu());
+            }
+
 
             if (!empty($request->files->get('page')['uploadImage'])) {
                 $fileName = $this->uploadImage($form);
@@ -211,7 +216,10 @@ class PageController extends AbstractController
                 $request->query->getInt('page', 1),
                 $limit
             );
-            $page = $this->pageRepository->getBySlug($siteId, '');
+            $page = $this->pageRepository->findOneBy([
+                'id' => $this->getActiveSite($request->getHost())['main_page_entity_id'] ?? 0,
+                'siteId' => $siteId
+            ]);
         }
         catch (NotFoundHttpException $exception) {
 
@@ -224,20 +232,6 @@ class PageController extends AbstractController
             'pages' => $pages,
             'page' => $page
         ]);
-    }
-
-    /**
-     * @Route("/technical-works", name="technical_works", methods={"GET"})
-     */
-    public function technicalWorks(Request $request): Response
-    {
-        $user = $this->getUser();
-
-        if (($this->getParameter('site')[$request->getHost()]['status']?? false) == StatusInterface::STATUS_ACTIVE
-            || (!empty($user) && in_array(User::ROLE_ADMIN, $user->getRoles()))) {
-            return $this->redirectToRoute('app_page_min');
-        }
-        return $this->render('page/technical_works.html.twig');
     }
 
     /**

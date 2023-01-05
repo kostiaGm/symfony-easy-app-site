@@ -33,7 +33,7 @@ class MenuRepository extends ServiceEntityRepository
         return (new NestedSetsCreateDelete($this->getEntityManager(), Menu::class))->create($node, $parent);
     }
 
-    public function delete(NodeInterface $node, bool $isSafeDelete = true): void
+    public function delete(NodeInterface $node, bool $isSafeDelete = false): void
     {
         (new NestedSetsCreateDelete($this->getEntityManager(), Menu::class))->delete($node, $isSafeDelete);
     }
@@ -41,27 +41,29 @@ class MenuRepository extends ServiceEntityRepository
     public function getAllQueryBuilder(?int $siteId = null): QueryBuilder
     {
         $queryBuilder = $this
-            ->getQueryBuilder()
+            ->getQueryBuilderWithSiteId($siteId)
             ->orderBy($this->getAlias() . ".tree", "ASC")
             ->addOrderBy($this->getAlias() . ".lft", "ASC");
 
-        if ($siteId !== null) {
-            $queryBuilder
-                ->andWhere($this->getAlias().".siteId=:siteId")
-                ->setParameter("siteId", $siteId)
-            ;
-        }
 
         return $queryBuilder;
     }
 
-    public function getAllSubItemsQueryBuilder(NodeInterface $menu, ?QueryBuilder $queryBuilder = null): QueryBuilder
-    {
-        return $this->getQueryBuilder($queryBuilder)
+    public function getAllSubItemsQueryBuilder(
+        NodeInterface $menu,
+        ?QueryBuilder $queryBuilder = null,
+        ?int $siteId
+    ): QueryBuilder {
+        $queryBuilder = $this->getAllSubItemsQueryBuilder($siteId, $queryBuilder)
+
             ->andWhere($this->getAlias() . ".tree=:tree")->setParameter("tree", $menu->getTree())
             ->andWhere($this->getAlias() . ".lft>:lft")->setParameter("lft", $menu->getLft())
             ->andWhere($this->getAlias() . ".rgt<:rgt")->setParameter("rgt", $menu->getRgt());
+
+        return $queryBuilder;
     }
+
+
 
     public function getAllRootsQueryBuilder(): QueryBuilder
     {
@@ -169,11 +171,29 @@ class MenuRepository extends ServiceEntityRepository
         return $queryBuilder;
     }
 
-    public function getAllMenu(int $siteId, ?int $treeId = null): ?array
+    public function getMenuLength(int $siteId): int
     {
+        $alias = $this->getAlias();
+
         return $this
-            ->getAllMenuQueryBuilder($siteId, $treeId)
+            ->getAllMenuQueryBuilder($siteId)
+            ->select("COUNT({$alias}.id)")
             ->getQuery()
-            ->getResult();
+            ->getSingleScalarResult()
+            ;
+    }
+
+    public function getAllMenu(int $siteId, array $params = []): ?array
+    {
+        $queryBuilder = $this->getAllMenuQueryBuilder($siteId, $params['treeId'] ?? null);
+        $alias = $this->getAlias();
+
+        foreach ($params as $key => $value) {
+            $queryBuilder
+                ->andWhere("{$alias}.{$key}=:{$key}")
+                ->setParameter($key, $value);
+            ;
+        }
+        return $queryBuilder->getQuery()->getResult();
     }
 }

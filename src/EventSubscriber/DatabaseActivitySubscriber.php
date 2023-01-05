@@ -6,23 +6,38 @@ use App\Entity\Interfaces\ChangeDataDayInterface;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\SafeDeleteInterface;
+use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Menu;
+use App\Lib\Traits\ActiveSiteTrait;
 use App\Repository\MenuRepository;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Events;
-use Twig\Environment;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+
 
 class DatabaseActivitySubscriber implements EventSubscriberInterface
 {
-    private Environment $twig;
-    private MenuRepository $menuRepository;
+    use ActiveSiteTrait;
 
-    public function __construct(Environment $twig,MenuRepository $menuRepository)
-    {
-        $this->twig = $twig;
+    private ParameterBagInterface $params;
+    private RequestStack $request;
+    private MenuRepository $menuRepository;
+    private EntityManagerInterface $entityManager;
+
+    public function __construct(
+        ParameterBagInterface $parameterBag,
+        RequestStack $request,
+        MenuRepository $menuRepository,
+        EntityManagerInterface $entityManager
+    ) {
+        $this->params = $parameterBag;
+        $this->request = $request;
         $this->menuRepository = $menuRepository;
+        $this->entityManager = $entityManager;
     }
 
     public function getSubscribedEvents()
@@ -37,7 +52,7 @@ class DatabaseActivitySubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
 
-        if ($entity instanceof JoinSiteInterface) {
+        if ($entity instanceof SiteInterface) {
             $this->saveJoinActiveSite($entity);
         }
 
@@ -46,28 +61,9 @@ class DatabaseActivitySubscriber implements EventSubscriberInterface
         }
 
         if ($entity instanceof IsJoinMenuInterface) {
-
-            $menu = new Menu();
-            $menu->setStatus(Menu::STATUS_ACTIVE);
-            $menu->setName($entity->getName());
-            $menu->setRoute($entity->getRenderPageRoute());
-            $path = '';
-            dump($entity->getMenu());
-            if ($entity->getMenu() !== null) {
-                $menu->setUrl($menu->getTransliteratedUrl());
-                $path = $this->getMenuPath($entity->getMenu()) . '/' . $menu->getUrl();
-                dump($path);
-                $path = preg_replace(['/\/{2,}/', '/^\/{1,}/'], ['/', ''], $path);
-            } else {
-                $menu->setUrl('');
-            }
-            $menu->setPath($path);
-            $menu->setType(Menu::SITE_PAGE_TYPE);
-            $this->menuRepository->create($menu, $entity->getMenu());
-            $entity->setMenu($menu);
+            $this->newMenu($entity);
         }
     }
-
 
     public function getMenuPath(NodeInterface $menu): string
     {
@@ -77,19 +73,16 @@ class DatabaseActivitySubscriber implements EventSubscriberInterface
             ->getParentsByItemQueryBuilder($menu)
             ->getQuery()
             ->getArrayResult();
-
-        dump($parentMenuItems);
         foreach ($parentMenuItems as $item) {
             $result .=  $item['url'];
         }
-        dump( $result);
+
         return $result;
     }
 
     public function preUpdate(PreUpdateEventArgs $args): void
     {
         $entity = $args->getObject();
-
         if ($entity instanceof ChangeDataDayInterface) {
             $dateNow = new \DateTime('now');
 
@@ -101,11 +94,43 @@ class DatabaseActivitySubscriber implements EventSubscriberInterface
         }
     }
 
-    private function saveJoinActiveSite(JoinSiteInterface $entity): void
+    private function newMenu(IsJoinMenuInterface $entity): void
     {
-        $activeSite = $this->twig->getGlobals()['activeSite'] ?? null;
-        if ($activeSite instanceof Site) {
-            $entity->setSite($activeSite);
+        $activeSite = $this->getActiveSite();
+
+        if (empty($activeSite['id']) ||
+            (empty($entity->getMenu()) && $this->menuRepository->getMenuLength($activeSite['id']) > 0)) {
+            return;
+        }
+
+        $menu = new Menu();
+        $menu->setStatus(Menu::STATUS_ACTIVE);
+        $menu->setName($entity->getName());
+        $menu->setRoute($entity->getRenderPageRoute());
+        $path = '';
+
+        if ($entity->getMenu() !== null) {
+            $menu->setUrl($menu->getTransliteratedUrl());
+            $path = $this->getMenuPath($entity->getMenu()) . '/' . $menu->getUrl();
+            $path = preg_replace(['/\/{2,}/', '/^\/{1,}/'], ['/', ''], $path);
+        } else {
+            $menu->setUrl('');
+        }
+        $menu->setPath($path);
+        $menu->setType(Menu::SITE_PAGE_TYPE);
+        $this->menuRepository->create($menu, $entity->getMenu());
+        $entity->setMenu($menu);
+    }
+
+
+
+    private function saveJoinActiveSite(SiteInterface $entity): void
+    {
+        $activeSite = $this->getActiveSite();
+        if (!empty($activeSite['id'])) {
+
+            $entity->setSiteId($activeSite['id']);
         }
     }
+
 }

@@ -16,4 +16,19 @@ trait GetQueryBuilderRepositoryTrait
 
         return $queryBuilder;
     }
+
+    public function getQueryBuilderWithSiteId(
+        ?int $siteId,
+        ?QueryBuilder $queryBuilder = null,
+        string $indexBy = null
+    ) : QueryBuilder {
+        $queryBuilder = $this->getQueryBuilder($queryBuilder, $indexBy);
+        if ($siteId !== null) {
+            $queryBuilder
+                ->andWhere($this->getAlias().".siteId=:siteId")
+                ->setParameter("siteId", $siteId)
+            ;
+        }
+        return $queryBuilder;
+    }
 }

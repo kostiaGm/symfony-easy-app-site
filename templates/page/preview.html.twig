@@ -6,11 +6,11 @@
 
 
         <div class="card-body">
-            {% if item.route is not empty%}
+            {% if item.route is defined and item.route is not empty %}
                 {% set url = path(item.route, {slug: item.path}) %}
-            {% elseif item.type == constant('App\\Entity\\Menu::SITE_PAGE_TYPE') %}
+            {% elseif item.type is defined and item.type == constant('App\\Entity\\Menu::SITE_PAGE_TYPE') %}
                 {% set url = app.request.getSchemeAndHttpHost ~ '/' ~ item.url %}
-            {% elseif item.type == constant('App\\Entity\\Menu::EXTERNAL_PAGE_TYPE') %}
+            {% elseif item.type is defined and item.type == constant('App\\Entity\\Menu::EXTERNAL_PAGE_TYPE') %}
                 {% set url = item.url %}
             {% endif %}
 

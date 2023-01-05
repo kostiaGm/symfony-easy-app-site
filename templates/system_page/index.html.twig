@@ -1,0 +1,25 @@
+{% extends 'base-columns-without.html.twig' %}
+{% block title %}System Page{% endblock %}
+{% block h1 %}System Page{% endblock %}
+{% block body %}
+    <div class="alert alert alert-danger">
+        <p><strong>Error [{{ id }}]: </strong> {{ message }} </p>
+
+        {% if id == 1 %}
+            <p>Create file: your_project_directory/config/site/site.yaml</p>
+            <p>Example: </p>
+            <code>
+                parameters:<br>
+                &nbsp;site:<br>
+                &nbsp;&nbsp; &nbsp;{{ app.request.getHost }}: {<br>
+                &nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;id: 1,<br>
+                &nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;main_page_entity_id: 1,<br>
+                &nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;status: 1,<br>
+                &nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;max_preview_pages_on_main: 5,<br>
+                &nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;max_preview_pages: 10<br>
+                &nbsp; &nbsp;&nbsp;}
+            </code>
+        {% endif %}
+
+    </div>
+{% endblock %}

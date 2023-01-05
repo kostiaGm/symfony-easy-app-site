@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
-    {% if page is defined and page.id is not null %}
+    {% if page.id is defined and page.id is not null %}
         {{ render(controller('App\\Controller\\SeoController::detail', {entity: page, siteId: activeSite.id})) }}
     {% endif %}
 

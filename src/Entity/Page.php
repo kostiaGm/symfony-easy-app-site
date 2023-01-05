@@ -65,6 +65,8 @@ class Page implements
 
     /**
      * @ORM\ManyToOne(targetEntity=Menu::class, inversedBy="pages")
+     * @ORM\JoinColumn(nullable=true, onDelete="SET NULL")
+     *
      */
     private $menu;
 

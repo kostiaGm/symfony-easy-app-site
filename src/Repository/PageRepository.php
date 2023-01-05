@@ -52,7 +52,7 @@ class PageRepository extends ServiceEntityRepository
         $alias = $this->getAlias();
         return $this
             ->getQueryBuilder()
-            ->innerJoin("{$alias}.menu", 'm')
+            ->leftJoin("{$alias}.menu", 'm')
             ->addSelect('m')
             ->andWhere("{$alias}.siteId=:siteId")
             ->setParameter('siteId', $siteId)

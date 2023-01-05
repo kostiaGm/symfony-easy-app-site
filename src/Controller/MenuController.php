@@ -152,7 +152,7 @@ class MenuController extends AbstractController
     {
         return $this->render(
             'menu/tree_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()), $tree)
+            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()))
         ]);
     }
 
@@ -160,26 +160,20 @@ class MenuController extends AbstractController
     {
         return $this->render(
             'menu/left_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()))
+            'items' => $this->menuRepository->getAllMenu($this->getActiveSiteId($request->getHost()), [
+                'isLeftMenu' => true
+            ])
         ]);
     }
 
-    public function topMenu(Request $request, int $rootId): Response
+    public function topMenu(Request $request): Response
     {
-        $menu = $this->entityManager->find(Menu::class, $rootId);
-        $items = [];
-        if ($menu) {
-            $items = $this->menuRepository
-                ->getAllSubItemsQueryBuilder($menu)
-                ->andWhere($this->menuRepository->getAlias().".lvl=:lvl")
-                ->setParameter('lvl', $menu->getLvl() + 1)
-                ->getQuery()
-                ->getResult()
-            ;
-        }
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $activeSite = $this->getActiveSite($request->getHost());
+        $items = $this->menuRepository->getAllMenu($siteId, ['isTopMenu' => true]);
 
         return $this->render('menu/top_menu.html.twig',[
-            'activeSite' => $this->getParameter('site')[$request->getHost()] ?? '',
+            'activeSite' => $activeSite ?? '',
             'items' => $items
         ]);
     }

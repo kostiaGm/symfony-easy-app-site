@@ -78,6 +78,21 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Si
      */
     private $entityId;
 
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $isTopMenu;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $isLeftMenu;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $isBottomMenu;
+
 
 
     public function __construct()
@@ -189,6 +204,42 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Si
     public function setEntityId(?int $entityId): self
     {
         $this->entityId = $entityId;
+
+        return $this;
+    }
+
+    public function isIsTopMenu(): ?bool
+    {
+        return $this->isTopMenu;
+    }
+
+    public function setIsTopMenu(bool $isTopMenu): self
+    {
+        $this->isTopMenu = $isTopMenu;
+
+        return $this;
+    }
+
+    public function isIsLeftMenu(): ?bool
+    {
+        return $this->isLeftMenu;
+    }
+
+    public function setIsLeftMenu(bool $isLeftMenu): self
+    {
+        $this->isLeftMenu = $isLeftMenu;
+
+        return $this;
+    }
+
+    public function isIsBottomMenu(): ?bool
+    {
+        return $this->isBottomMenu;
+    }
+
+    public function setIsBottomMenu(bool $isBottomMenu): self
+    {
+        $this->isBottomMenu = $isBottomMenu;
 
         return $this;
     }
