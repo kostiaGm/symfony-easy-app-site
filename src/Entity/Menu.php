@@ -4,10 +4,12 @@ namespace App\Entity;
 
 use App\Entity\Interfaces\ChangeDataDayInterface;
 use App\Entity\Interfaces\NodeInterface;
+use App\Entity\Interfaces\OwnerInterface;
 use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Traits\ChangeDataDayTrait;
 use App\Entity\Traits\NodeTrait;
+use App\Entity\Traits\OwnerTrait;
 use App\Entity\Traits\SiteTrait;
 use App\Entity\Traits\StatusTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -35,7 +37,12 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  *          }
  *     )
  */
-class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, SiteInterface
+class Menu implements
+    NodeInterface,
+    StatusInterface,
+    ChangeDataDayInterface,
+    SiteInterface,
+    OwnerInterface
 {
     public const SITE_PAGE_TYPE = 1;
     public const EXTERNAL_PAGE_TYPE = 2;
@@ -47,7 +54,13 @@ class Menu implements NodeInterface, StatusInterface, ChangeDataDayInterface, Si
         self::SUB_ITEM_MENU_TYPE => 'Sub item menu',
     ];
 
-    use StatusTrait, ChangeDataDayTrait, NodeTrait, SiteTrait;
+    use
+        StatusTrait,
+        ChangeDataDayTrait,
+        NodeTrait,
+        SiteTrait,
+        OwnerTrait
+        ;
 
     /**
      * @ORM\Id

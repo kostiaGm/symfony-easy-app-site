@@ -6,6 +6,7 @@ use App\Entity\Interfaces\ChangeDataDayInterface;
 use App\Entity\Interfaces\ImageInterface;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Interfaces\IsOnMainPageInterface;
+use App\Entity\Interfaces\OwnerInterface;
 use App\Entity\Interfaces\PreviewBodyTextInterface;
 use App\Entity\Interfaces\SeoInterface;
 use App\Entity\Interfaces\SiteInterface;
@@ -14,6 +15,7 @@ use App\Entity\Traits\ChangeDataDayTrait;
 use App\Entity\Traits\ImageTrait;
 use App\Entity\Traits\IsJoinMenuTrait;
 use App\Entity\Traits\IsOnMainPageTrait;
+use App\Entity\Traits\OwnerTrait;
 use App\Entity\Traits\PreviewBodyTextTrait;
 use App\Entity\Traits\SeoTrait;
 use App\Entity\Traits\SiteTrait;
@@ -40,7 +42,8 @@ class Page implements
     IsOnMainPageInterface,
     IsJoinMenuInterface,
     SiteInterface,
-    ImageInterface
+    ImageInterface,
+    OwnerInterface
 {
     use ChangeDataDayTrait,
         PreviewBodyTextTrait,
@@ -48,7 +51,8 @@ class Page implements
         IsOnMainPageTrait,
         IsJoinMenuTrait,
         SiteTrait,
-        ImageTrait
+        ImageTrait,
+        OwnerTrait
 
         ;
     /**
@@ -79,6 +83,7 @@ class Page implements
      * @ORM\Column(type="boolean")
      */
     private $isPreview;
+
 
 
 
@@ -127,5 +132,6 @@ class Page implements
 
         return $this;
     }
+
 }
 

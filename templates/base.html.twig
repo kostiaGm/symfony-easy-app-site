@@ -53,7 +53,7 @@
     </div>
 
     <div class="wrapper flex-grow-1">
-        {% if page.preview is not empty  %}
+        {% if page.preview is defined and page.preview is not empty  %}
             <hr>
             {{ page.preview }}
         {% endif %}
