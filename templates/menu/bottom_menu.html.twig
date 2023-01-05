@@ -1,0 +1,19 @@
+{% if items is not empty %}
+    <div class="row">
+        {% for item in items %}
+            <div class="col">
+                {% set url = '#' %}
+
+                {% if item.route is not empty %}
+                    {% set url = path(item.route, {slug: item.path}) %}
+                {% elseif item.type == constant('App\\Entity\\Menu::SITE_PAGE_TYPE') %}
+                    {% set url = app.request.getSchemeAndHttpHost ~ '/' ~ item.url %}
+                {% elseif item.type == constant('App\\Entity\\Menu::EXTERNAL_PAGE_TYPE') %}
+                    {% set url = item.url %}
+                {% endif %}
+                <a href="{{ url }}">{{ item.name }}</a>
+
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

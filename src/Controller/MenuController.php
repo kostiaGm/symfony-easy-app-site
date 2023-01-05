@@ -178,6 +178,18 @@ class MenuController extends AbstractController
         ]);
     }
 
+    public function bottomMenu(Request $request): Response
+    {
+        $siteId = $this->getActiveSiteId($request->getHost());
+        $activeSite = $this->getActiveSite($request->getHost());
+        $items = $this->menuRepository->getAllMenu($siteId, ['isBottomMenu' => true]);
+
+        return $this->render('menu/bottom_menu.html.twig',[
+            'activeSite' => $activeSite ?? '',
+            'items' => $items
+        ]);
+    }
+
     public function breadcrumbs(NodeInterface $node, MenuRepository $menuRepository): Response
     {
         return $this->render('menu/breadcrumbs.html.twig', [

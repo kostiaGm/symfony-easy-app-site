@@ -18,7 +18,7 @@
         {{ encore_entry_script_tags('app') }}
     {% endblock %}
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 
 <div class="container">
 
@@ -51,6 +51,20 @@
             {% block body %}{% endblock %}
         </div>
     </div>
+
+    <div class="wrapper flex-grow-1">
+        {% if page.preview is not empty  %}
+            <hr>
+            {{ page.preview }}
+        {% endif %}
+    </div>
+    <footer>
+        <hr>
+        {{ render(controller('App\\Controller\\MenuController::bottomMenu')) }}
+    </footer>
+
+
 </div>
+
 </body>
 </html>
