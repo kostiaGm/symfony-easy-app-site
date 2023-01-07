@@ -2,6 +2,12 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\AuthorInterface;
+use App\Entity\Interfaces\OwnerInterface;
+use App\Entity\Interfaces\SiteInterface;
+use App\Entity\Traits\AuthorTrait;
+use App\Entity\Traits\OwnerTrait;
+use App\Entity\Traits\SiteTrait;
 use App\Repository\SeoRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -23,8 +29,10 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  *     )
  * @ORM\Entity(repositoryClass=SeoRepository::class)
  */
-class Seo
+class Seo implements SiteInterface, OwnerInterface, AuthorInterface
 {
+    use SiteTrait, OwnerTrait, AuthorTrait;
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -42,10 +50,7 @@ class Seo
      */
     private $entityId;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
-    private $siteId;
+
 
     /**
      * @ORM\OneToMany(targetEntity=SeoItem::class, mappedBy="seo", cascade={"persist"})
@@ -84,18 +89,6 @@ class Seo
     public function setEntityId(int $entityId): self
     {
         $this->entityId = $entityId;
-
-        return $this;
-    }
-
-    public function getSiteId(): ?int
-    {
-        return $this->siteId;
-    }
-
-    public function setSiteId(int $siteId): self
-    {
-        $this->siteId = $siteId;
 
         return $this;
     }

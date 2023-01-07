@@ -1,4 +1,4 @@
-{% if app.getUser and constant('App\\Entity\\User::ROLE_ADMIN') in app.getUser.roles %}
+{% if app.getUser and constant('App\\Entity\\Role::ROLE_ADMIN') in app.getUser.roles %}
 {% set adminMenuActiveRoute = app.request.attributes.get('_route') %}
 
 <div class="card mb-2">
@@ -10,12 +10,8 @@
     </div>
     <div class="card-body">
         <div class="list-group list-group-flush">
-
             {% for r, itm in items %}
-
-                        <a class="list-group-item list-group-item-action {{ itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}" href="{{ path(itm.route) }}">{{ itm.title }}</a>
-
-
+                <a class="list-group-item list-group-item-action {{ itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}" href="{{ path(itm.route) }}">{{ itm.title }}</a>
             {% endfor %}
 
         </div>

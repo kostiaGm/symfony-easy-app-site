@@ -35,7 +35,7 @@ class PageController extends AbstractController
     private LoggerInterface $logger;
 
     private const SUCCESS_MESSAGE = 'Page saved';
-    private const SUCCESS_SEO_MESSAGE = 'SEO saved';
+    private const SUCCESS_SEO_MESSAGE = 'Page saved';
     private const DELETE_MESSAGE = 'Page deleted';
     private const ERROR_MESSAGE = "Error! Page not saved";
 
@@ -122,7 +122,6 @@ class PageController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
 
             try {
-
                 if (empty($oidMenu)) {
                     $dBSMenu->create($page);
                 } elseif (!empty($page->getMenu()) && !empty($oidMenu) && $page->getMenu()->getId() != $oidMenu->getId()) {

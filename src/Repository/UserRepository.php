@@ -2,14 +2,20 @@
 
 namespace App\Repository;
 
+use App\Entity\Role;
 use App\Entity\User;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -19,15 +25,42 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
  * @method User[]    findAll()
  * @method User[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+class UserRepository extends ServiceEntityRepository implements UserLoaderInterface
 {
     use GetQueryBuilderRepositoryTrait;
 
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
-        $this->setAlias('m');
+        $this->setAlias('u');
     }
+
+    public function loadUserByUsername($username): UserInterface
+    {
+        $alias = $this->getAlias();
+
+        $q = $this
+            ->getQueryBuilder()
+            ->where("{$alias}.username = :username OR {$alias}.email = :email")
+            ->setParameter('username', $username)
+            ->setParameter('email', $username)
+            ->leftJoin("{$alias}.roles", 'r')
+            ->addSelect('r')
+            ->getQuery();
+
+        try {
+            $user = $q->getSingleResult();
+        } catch (NoResultException $e) {
+            $message = sprintf(
+                'Unable to find an active admin AcmeUserBundle:User object identified by "%s".',
+                $username
+            );
+            throw new UsernameNotFoundException($message, null, 0, $e);
+        }
+        return $user;
+    }
+
+
 
     public function add(User $entity, bool $flush = false): void
     {
@@ -61,14 +94,5 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->add($user, true);
     }
 
-    public function getAllQueryBuilder(int $siteId): QueryBuilder
-    {
-        $alias = $this->getAlias();
 
-        return $this
-            ->getQueryBuilder()
-            ->andWhere("{$alias}.siteId=:siteId")
-            ->setParameter("siteId", $siteId)
-            ;
-    }
 }

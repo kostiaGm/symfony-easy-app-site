@@ -2,7 +2,11 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\SiteInterface;
+use App\Entity\Traits\SiteTrait;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -12,8 +16,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @UniqueEntity(fields={"username"}, message="There is already an account with this username")
  */
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInterface
 {
+    use SiteTrait;
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -26,10 +32,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     private $username;
 
-    /**
-     * @ORM\Column(type="json")
-     */
-    private $roles = [];
+//   /* /**
+//     * @ORM\Column(type="json")
+//     */
+//    private $roles = [];*/
 
     /**
      * @var string The hashed password
@@ -47,13 +53,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     private $siteId;
 
-    public const ROLE_ADMIN = 'ROLE_ADMIN';
-    public const ROLE_USER = 'ROLE_USER';
+    /**
+     * @ORM\ManyToMany(targetEntity=Role::class, inversedBy="users")
+     */
+    private $roles;
 
-    public const ROLES = [
-       'Admin' =>  self::ROLE_ADMIN,
-       'User' => self::ROLE_USER,
-    ];
+    private $otherUserIdsWithMyGroups = [];
+
+
+    public function __construct()
+    {
+        $this->roles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -63,6 +74,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @deprecated since Symfony 5.3, use getUserIdentifier instead
      */
+
     public function getUsername(): string
     {
         return (string) $this->username;
@@ -75,33 +87,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
-    public function getUserIdentifier(): string
-    {
-        return (string) $this->username;
-    }
-
-    /**
-     * @see UserInterface
-     */
+//    /**
+//     * @see UserInterface
+//     */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
-
-        return array_unique($roles);
+        $result = [];
+        foreach ($this->getRolesCollection()->toArray() as $item) {
+            $result[] = $item->getRole();
+        }
+        return $result;
     }
 
-    public function setRoles(array $roles): self
+    public function getRolesCollection(): Collection
     {
-        $this->roles = $roles;
-
-        return $this;
+        return $this->roles;
     }
 
     /**
@@ -112,7 +112,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
-    public function setPassword(string $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
 
@@ -162,4 +162,40 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function addRole(Role $role): self
+    {
+        if (!$this->roles->contains($role)) {
+            $this->roles[] = $role;
+        }
+
+        return $this;
+    }
+
+    public function removeRole(Role $role): self
+    {
+        $this->roles->removeElement($role);
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getOtherUserIdsWithMyGroups(): array
+    {
+        return $this->otherUserIdsWithMyGroups;
+    }
+
+    /**
+     * @param array $otherUserIdsWithMyGroups
+     * @return User
+     */
+    public function setOtherUserIdsWithMyGroups(array $otherUserIdsWithMyGroups): User
+    {
+        $this->otherUserIdsWithMyGroups = $otherUserIdsWithMyGroups;
+        return $this;
+    }
+
+
 }

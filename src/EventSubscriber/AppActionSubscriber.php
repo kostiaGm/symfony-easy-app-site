@@ -3,7 +3,9 @@
 namespace App\EventSubscriber;
 
 use App\Entity\Interfaces\StatusInterface;
+use App\Entity\Role;
 use App\Entity\User;
+use App\EventSubscriberService\Interfaces\PermissionServiceInterface;
 use App\Service\Traits\ActiveSiteTrait;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -25,6 +27,7 @@ class AppActionSubscriber implements EventSubscriberInterface
     private TokenStorageInterface $tokenStorage;
     private RequestStack $request;
     private SessionInterface $session;
+    private PermissionServiceInterface $permissionService;
 
     private const EXCLUDE_CONTROLLERS_PATTERN = '/error_controller|SystemPageController/';
 
@@ -32,13 +35,14 @@ class AppActionSubscriber implements EventSubscriberInterface
         ParameterBagInterface $params,
         RouterInterface $router,
         TokenStorageInterface $tokenStorage,
-        RequestStack $requestStack
+        RequestStack $requestStack,
+        PermissionServiceInterface $permissionService
     ) {
         $this->params = $params;
         $this->router = $router;
         $this->tokenStorage = $tokenStorage;
         $this->request = $requestStack;
-
+        $this->permissionService = $permissionService;
     }
 
     public function onKernelRequest(RequestEvent $event): void
@@ -59,6 +63,7 @@ class AppActionSubscriber implements EventSubscriberInterface
         }
 
         if (!$isAllowController && $this->isSiteIsInactiveStatus($activeSite)) {
+
             $url = $this->router->generate('technical_works');
             $redirectResponse = new RedirectResponse($url);
             $event->setResponse($redirectResponse);
@@ -70,12 +75,12 @@ class AppActionSubscriber implements EventSubscriberInterface
         $token = $this->tokenStorage->getToken();
         $isRedirectToInfoMessageRout = false;
 
-        if (($site['status'] ?? StatusInterface::STATUS_INACTIVE) == StatusInterface::STATUS_ACTIVE) {
-
+        if (($site['status'] ?? StatusInterface::STATUS_INACTIVE) != StatusInterface::STATUS_ACTIVE) {
             $isRedirectToInfoMessageRout =
                 ($token instanceof PostAuthenticationToken &&
-                    !in_array(User::ROLE_ADMIN, $token->getRoleNames()));
+                    !in_array(Role::ROLE_ADMIN, $token->getRoleNames()));
         }
+
         return $isRedirectToInfoMessageRout;
     }
 

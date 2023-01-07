@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Form\UserType;
 use App\Repository\UserRepository;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
+use Doctrine\Common\Collections\ArrayCollection;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,9 +23,9 @@ class UserController extends AbstractController
     private ActiveSiteServiceInterface $activeSiteService;
     private LoggerInterface $logger;
 
-    private const SUCCESS_MESSAGE = 'SEO saved';
-    private const DELETE_MESSAGE = 'SEO deleted';
-    private const ERROR_MESSAGE = "Error! SEO not saved";
+    private const SUCCESS_MESSAGE = 'User saved';
+    private const DELETE_MESSAGE = 'User deleted';
+    private const ERROR_MESSAGE = "Error! User not saved";
 
     public function __construct(
         PaginatorInterface $paginator,
@@ -45,7 +46,7 @@ class UserController extends AbstractController
     {
         $limit = $this->activeSiteService->get()['max_preview_pages'] ?? 5;
         $query = $this->userRepository
-            ->getAllQueryBuilder($this->activeSiteService->getId())
+            ->getQueryBuilderWithSiteId($this->activeSiteService->getId())
             ->getQuery()
         ;
 
@@ -70,6 +71,7 @@ class UserController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
             try {
                 $this->userRepository->add($user, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
@@ -106,17 +108,37 @@ class UserController extends AbstractController
         UserPasswordHasherInterface $userPasswordHasher
     ): Response {
         $form = $this->createForm(UserType::class, $user);
+        $oldPassword = $user->getPassword();
         $form->handleRequest($request);
+        $oldRoles = new ArrayCollection();
+
+        foreach ($user->getRolesCollection() as $item) {
+            $oldRoles->add($item);
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
 
-            if (!empty($user->getPassword())) {
+            foreach ($oldRoles as $role) {
+                if (!$user->getRolesCollection()->contains($role)) {
+                    $role->removeUser($user);
+                    $userRepository->add($user);
+                }
+            }
+
+            foreach ($user->getRolesCollection() as $role) {
+                $role->addUser($user);
+                $userRepository->add($user);
+            }
+
+            if ($user->getPassword() !== null && $user->getPassword() !== $oldPassword) {
                 $user->setPassword(
                     $userPasswordHasher->hashPassword(
                         $user,
                         $form->get('plainPassword')->getData()
                     )
                 );
+            } else {
+                $user->setPassword($oldPassword);
             }
 
             try {
