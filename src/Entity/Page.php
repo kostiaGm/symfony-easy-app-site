@@ -84,9 +84,6 @@ class Page implements
      */
     private $isPreview;
 
-
-
-
     public function getId(): ?int
     {
         return $this->id;

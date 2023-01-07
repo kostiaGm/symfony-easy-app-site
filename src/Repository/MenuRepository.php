@@ -158,14 +158,16 @@ class MenuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getAllMenuQueryBuilder(int $siteId, ?int $treeId = null): ?QueryBuilder
+    public function getAllMenuQueryBuilder(int $siteId, array $params = []): ?QueryBuilder
     {
         $queryBuilder = $this->getAllQueryBuilder($siteId);
+        $alias = $this->getAlias();
 
-        if ($treeId !== null) {
+        foreach ($params as $key => $value) {
             $queryBuilder
-                ->andWhere($this->getAlias() . ".tree=:tree")
-                ->setParameter("tree", $treeId);
+                ->andWhere("{$alias}.{$key}=:{$key}")
+                ->setParameter($key, $value);
+            ;
         }
 
         return $queryBuilder;
@@ -181,19 +183,5 @@ class MenuRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult()
             ;
-    }
-
-    public function getAllMenu(int $siteId, array $params = []): ?array
-    {
-        $queryBuilder = $this->getAllMenuQueryBuilder($siteId, $params['treeId'] ?? null);
-        $alias = $this->getAlias();
-
-        foreach ($params as $key => $value) {
-            $queryBuilder
-                ->andWhere("{$alias}.{$key}=:{$key}")
-                ->setParameter($key, $value);
-            ;
-        }
-        return $queryBuilder->getQuery()->getResult();
     }
 }

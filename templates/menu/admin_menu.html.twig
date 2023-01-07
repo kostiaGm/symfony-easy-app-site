@@ -10,14 +10,9 @@
     </div>
     <div class="card-body">
         <div class="list-group list-group-flush">
-
             {% for r, itm in items %}
-
-                        <a class="list-group-item list-group-item-action {{ itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}" href="{{ path(itm.route) }}">{{ itm.title }}</a>
-
-
+                 <a class="list-group-item list-group-item-action {{ itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}" href="{{ path(itm.route) }}">{{ itm.title }}</a>
             {% endfor %}
-
         </div>
     </div>
 </div>

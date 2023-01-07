@@ -59,24 +59,26 @@ class PageRepository extends ServiceEntityRepository
             ;
     }
 
-    public function getBySlug(int $siteId, string $slug): IsJoinMenuInterface
+    public function getBySlugQueryBuilder(int $siteId, string $slug): QueryBuilder
     {
-        $queryBuilder = $this
+        return $this
             ->getAllQueryBuilder($siteId)
             ->andWhere('m.path=:slug')
             ->setParameter('slug', $slug)
         ;
-
-        $result = $queryBuilder->getQuery()->getOneOrNullResult();
-
-        if (empty($result)) {
-            throw new NotFoundHttpException("Page [ $slug ] not found");
-        }
-
-        return $result;
     }
 
-    public function getPreviewOnMain(int $siteId, int $limit): ?array
+    public function getByIdQueryBuilder(int $id): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilder()
+            ->andWhere("{$alias}.id=:id")
+            ->setParameter('id', $id)
+            ;
+    }
+
+    public function getPreviewOnMainQueryBuilder(int $siteId): QueryBuilder
     {
         $alias = $this->getAlias();
         return $this
@@ -84,9 +86,6 @@ class PageRepository extends ServiceEntityRepository
             ->andWhere("{$alias}.siteId=:siteId")->setParameter("siteId", $siteId)
             ->andWhere("{$alias}.isOnMainPage=:isOnMainPage")->setParameter("isOnMainPage", true)
             ->addOrderBy("{$alias}.id", "DESC")
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult()
         ;
     }
 

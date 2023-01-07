@@ -37,7 +37,7 @@ class SystemPageController extends AbstractController
 
         if (($this->getParameter('site')[$request->getHost()]['status']?? false) == StatusInterface::STATUS_ACTIVE
             || (!empty($user) && in_array(User::ROLE_ADMIN, $user->getRoles()))) {
-            return $this->redirectToRoute('app_page_min');
+            return $this->redirectToRoute('app_page_main');
         }
         return $this->render('system_page/technical_works.html.twig');
     }

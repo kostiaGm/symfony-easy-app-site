@@ -43,7 +43,7 @@ class SeoRepository extends ServiceEntityRepository
         }
     }
 
-    public function getByEntity(string $entity, int $siteId, int $id): ?Seo
+    public function getByEntityQueryBuilder(string $entity, int $siteId, int $id): ?QueryBuilder
     {
         $queryBuilder = $this->getQueryBuilder()
             ->leftJoin($this->getAlias().".items", "items")->addSelect('items')
@@ -52,7 +52,7 @@ class SeoRepository extends ServiceEntityRepository
             ->andWhere($this->getAlias().".entity=:entity")->setParameter("entity", $entity)
         ;
 
-        return $queryBuilder->getQuery()->getOneOrNullResult();
+        return $queryBuilder;
     }
 
     public function deleteSubItems(?Seo $seo): void

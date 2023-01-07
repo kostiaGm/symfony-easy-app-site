@@ -16,6 +16,9 @@ use App\Form\SeoType;
 use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeoRepository;
+use App\Service\CacheKeyService;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
+use App\Service\Interfaces\CacheKeyServiceInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,37 +31,54 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 
 class PageController extends AbstractController
 {
-    use ActiveTrait, FileUploadTrait;
+    use FileUploadTrait;
 
     private PageRepository $pageRepository;
     private SluggerInterface $slugger;
     private LoggerInterface $logger;
+    private ActiveSiteServiceInterface $activeSiteService;
+    private CacheKeyServiceInterface $cacheKeyService;
+    private PaginatorInterface $paginator;
 
     private const SUCCESS_MESSAGE = 'Page saved';
     private const SUCCESS_SEO_MESSAGE = 'SEO saved';
     private const DELETE_MESSAGE = 'Page deleted';
     private const ERROR_MESSAGE = "Error! Page not saved";
 
-    public function __construct(PageRepository $pageRepository, SluggerInterface $slugger, LoggerInterface $logger)
-    {
+    public function __construct(
+        PageRepository $pageRepository,
+        SluggerInterface $slugger,
+        ActiveSiteServiceInterface $activeSiteService,
+        LoggerInterface $logger,
+        CacheKeyServiceInterface $cacheKeyService,
+        PaginatorInterface $paginator
+    ) {
         $this->pageRepository = $pageRepository;
         $this->slugger = $slugger;
+        $this->activeSiteService = $activeSiteService;
+        $this->cacheKeyService = $cacheKeyService;
         $this->logger = $logger;
+        $this->paginator = $paginator;
     }
 
     /**
      * @Route("/admin/page", name="app_page_index", methods={"GET"})
      */
-    public function index(Request $request, PaginatorInterface $paginator): Response
+    public function index(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
+        $query = $this->pageRepository
+            ->getAllQueryBuilder($this->activeSiteService->getId())
+            ->getQuery();
 
-        $pagination = $paginator->paginate(
+        $this->cacheKeyService->getQuery($query);
+
+        $pagination = $this->paginator->paginate(
             $this->pageRepository
-                ->getAllQueryBuilder($siteId)
-                ->getQuery(),
+                ->getAllQueryBuilder($this->activeSiteService->getId())
+                ->getQuery()
+                ->useQueryCache(true),
             $request->query->getInt('page', 1),
-            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+            $this->activeSiteService->get()['max_preview_pages'] ?? 5
         );
 
         return $this->render('page/index.html.twig', [
@@ -98,8 +118,20 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page/{id}", name="app_page_show", methods={"GET"})
      */
-    public function show(Page $page): Response
+    public function show(int $id): Response
     {
+        $query = $this
+            ->pageRepository
+            ->getByIdQueryBuilder($id)
+            ->getQuery();
+
+        $this->cacheKeyService->getQuery($query);
+        $page = $query->getOneOrNullResult();
+
+        if (empty($page)) {
+            throw new NotFoundHttpException("Page [ $id ] not found");
+        }
+
         return $this->render('page/show.html.twig', [
             'page' => $page,
         ]);
@@ -176,11 +208,26 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page/seo/{id}", name="app_page_seo", methods={"GET","POST"})
      */
-    public function seo(Request $request, Page $page, SeoRepository $seoRepository): Response
+    public function seo(int $id, Request $request, SeoRepository $seoRepository): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $seo = $seoRepository->getByEntity(Page::class, $siteId, $page->getId()) ?? new Seo();
+        $query = $this
+            ->pageRepository
+            ->getByIdQueryBuilder($id)
+            ->getQuery();
 
+        $page = $query->getOneOrNullResult();
+
+        if (empty($page)) {
+            throw new NotFoundHttpException("Page [ $id ] not found");
+        }
+
+        $siteId = $this->activeSiteService->getId();
+        $query = $seoRepository
+            ->getByEntityQueryBuilder(Page::class, $siteId, $page->getId())
+            ->getQuery()
+        ;
+
+        $seo = $query->getOneOrNullResult();
         $default = [];
 
         if (!empty($page->getImage())) {
@@ -195,7 +242,6 @@ class PageController extends AbstractController
             $default['og:image:height'] = $imageParams['size']['small']['height'];
             $default['og:image:alt'] = $page->getName();
         }
-
 
         $form = $this->createForm(SeoType::class, $seo, [
                 'exclude' => ['entity', 'entityId'],
@@ -230,30 +276,32 @@ class PageController extends AbstractController
 
 
     /**
-     * @Route("/", name="app_page_min", methods={"GET"})
+     * @Route("/", name="app_page_main", methods={"GET"})
      */
-    public function main(Request $request, PaginatorInterface $paginator): Response
+    public function main(Request $request): Response
     {
         try {
-            $siteId = $this->getActiveSiteId($request->getHost());
-            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
-            $query = $this
-                ->pageRepository
-                ->getAllQueryBuilder($siteId)
-                ->andWhere($this->pageRepository->getAlias() . ".isOnMainPage=:isOnMainPage")
-                ->setParameter("isOnMainPage", true)
-                ->addOrderBy($this->pageRepository->getAlias() . ".id", "DESC")
-                ->getQuery();
+            $siteId = $this->activeSiteService->getId();
+            $query = $this->pageRepository->getPreviewOnMainQueryBuilder($siteId)->getQuery();
 
-            $pages = $paginator->paginate(
+            $this->cacheKeyService->getQuery($query);
+
+            $pages = $this->paginator->paginate(
                 $query,
                 $request->query->getInt('page', 1),
-                $limit
+                $this->activeSiteService->get()['max_preview_pages'] ?? 5
             );
-            $page = $this->pageRepository->findOneBy([
-                'id' => $this->getActiveSite($request->getHost())['main_page_entity_id'] ?? 0,
-                'siteId' => $siteId
-            ]);
+
+            $id = $this->activeSiteService->get()['main_page_entity_id'] ?? 0;
+            $query = $this->pageRepository->getByIdQueryBuilder($id)->getQuery();
+            $this->cacheKeyService->getQuery($query);
+            $page = $query->getOneOrNullResult();
+
+            if (empty($page)) {
+                throw new NotFoundHttpException("Page [ $id ] not found");
+            }
+
+
         } catch (NotFoundHttpException $exception) {
 
         } catch (\Throwable $exception) {
@@ -269,10 +317,17 @@ class PageController extends AbstractController
     /**
      * @Route("/pages/{slug}", requirements={"slug"="[a-z0-9\/\-]*"}, name="app_page_detail", methods={"GET"})
      */
-    public function detail(Request $request, string $slug): Response
+    public function detail(string $slug): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $page = $this->pageRepository->getBySlug($siteId, $slug);
+        $query = $this->pageRepository->getBySlugQueryBuilder (
+            $this->activeSiteService->getId(),
+            $slug
+        )->getQuery();
+
+        $this->cacheKeyService->getQuery($query);
+        $page = $query->getOneOrNullResult();
+
+
         return $this->render('page/detail.html.twig', [
             'page' => $page
         ]);
@@ -281,14 +336,13 @@ class PageController extends AbstractController
     public function preview(
         Request            $request,
         Page               $page,
-        MenuRepository     $menuRepository,
-        PaginatorInterface $paginator
+        MenuRepository     $menuRepository
     ): Response {
 
         $pages = null;
 
         if ($page->isIsPreview() && $page->getMenu() instanceof NodeInterface) {
-            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+            $limit =  $this->activeSiteService->get()['max_preview_pages'] ?? 5;
 
             $queryBuilder = $this
                 ->pageRepository
@@ -301,13 +355,15 @@ class PageController extends AbstractController
             $queryBuilder
                 ->orderBy($this->pageRepository->getAlias() . ".id");
 
-            $pages = $paginator->paginate(
-                $queryBuilder->getQuery(),
+            $query = $queryBuilder->getQuery();
+            $this->cacheKeyService->getQuery($query);
+
+            $pages = $this->paginator->paginate(
+                $query,
                 $request->query->getInt('page', 1),
                 $limit
             );
         }
-
 
         return $this->render('page/preview.html.twig', [
             'pages' => $pages

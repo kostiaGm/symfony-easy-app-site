@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\StatusInterface;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
+use App\Service\Interfaces\CacheKeyServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
@@ -24,6 +25,7 @@ class MenuController extends AbstractController
     private EntityManagerInterface $entityManager;
     private ActiveSiteServiceInterface $activeSiteService;
     private LoggerInterface $logger;
+    private CacheKeyServiceInterface $cacheKeyService;
 
     private const SUCCESS_MESSAGE = 'Menu saved';
     private const DELETE_MESSAGE = 'Menu deleted';
@@ -33,12 +35,14 @@ class MenuController extends AbstractController
         MenuRepository $menuRepository,
         EntityManagerInterface $entityManager,
         ActiveSiteServiceInterface $activeSiteService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        CacheKeyServiceInterface $cacheKeyService
     ) {
         $this->menuRepository = $menuRepository;
         $this->entityManager = $entityManager;
         $this->activeSiteService = $activeSiteService;
         $this->logger = $logger;
+        $this->cacheKeyService = $cacheKeyService;
     }
 
     /**
@@ -160,28 +164,56 @@ class MenuController extends AbstractController
         ]);
     }
 
-    public function treeMenu(Request $request, ?int $tree): Response
+    public function treeMenu(?int $tree): Response
     {
+        $query = $this
+            ->menuRepository
+            ->getAllMenuQueryBuilder($this->activeSiteService->get())
+            ->getQuery()
+        ;
+
+        $this->cacheKeyService->getQuery($query);
+        $items = $query->getResult();
+
         return $this->render(
             'menu/tree_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->activeSiteService->get())
+            'items' => $items
         ]);
     }
 
     public function leftMenu(Request $request)
     {
+        $query = $this
+            ->menuRepository
+            ->getAllMenuQueryBuilder($this->activeSiteService->getId(), [
+                'isLeftMenu' => true
+            ])
+            ->getQuery();
+
+       $this->cacheKeyService->getQuery($query, 'leftMenu', 'left_menu');
+       $items = $query->getResult();
+
         return $this->render(
             'menu/left_menu.html.twig', [
-            'items' => $this->menuRepository->getAllMenu($this->activeSiteService->getId(), [
-                'isLeftMenu' => true
-            ]),
+            'items' =>$items,
             'request' => $request
         ]);
     }
 
     public function topMenu(Request $request): Response
     {
-        $items = $this->menuRepository->getAllMenu($this->activeSiteService->getId(), ['isTopMenu' => true]);
+        $query = $this
+            ->menuRepository
+            ->getAllMenuQueryBuilder($this->activeSiteService->getId(), [
+                'isTopMenu' => true
+            ])
+            ->getQuery();
+
+        $this->cacheKeyService->getQuery($query, 'topMenu', 'top_menu');
+
+        $items = $query->getResult();
+
+
         return $this->render('menu/top_menu.html.twig',[
             'activeSite' => $this->activeSiteService->get(),
             'items' => $items
@@ -190,17 +222,29 @@ class MenuController extends AbstractController
 
     public function bottomMenu(Request $request): Response
     {
-        $items = $this->menuRepository->getAllMenu($this->activeSiteService->getId(), ['isBottomMenu' => true]);
+        $query = $this
+            ->menuRepository
+            ->getAllMenuQueryBuilder($this->activeSiteService->getId(), [
+                'isBottomMenu' => true
+            ])
+            ->getQuery();
+
+        $this->cacheKeyService->getQuery($query, 'bottomMenu', 'bottom_menu');
+        $items = $query->getResult();
+
         return $this->render('menu/bottom_menu.html.twig',[
             'activeSite' => $this->activeSiteService->get(),
             'items' => $items
         ]);
     }
 
-    public function breadcrumbs(NodeInterface $node, MenuRepository $menuRepository): Response
+    public function breadcrumbs(NodeInterface $node): Response
     {
+        $query = $this->menuRepository->getParentsByItemQueryBuilder($node)->getQuery();
+        $this->cacheKeyService->getQuery($query, 'breadcrumbs', 'breadcrumbs_'.$node->getId());
+
         return $this->render('menu/breadcrumbs.html.twig', [
-            'items' => $menuRepository->getParentsByItemQueryBuilder($node)->getQuery()->getArrayResult()
+            'items' => $query->getArrayResult()
         ]);
     }
 }
