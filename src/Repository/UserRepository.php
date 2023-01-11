@@ -55,11 +55,10 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
                 'Unable to find an active admin AcmeUserBundle:User object identified by "%s".',
                 $username
             );
-            throw new UsernameNotFoundException($message, null, 0, $e);
+            throw new UsernameNotFoundException($message, 1, $e);
         }
         return $user;
     }
-
 
 
     public function add(User $entity, bool $flush = false): void
@@ -94,5 +93,19 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
         $this->add($user, true);
     }
 
+    public function getUsersIdsByMyGroup(User $user): void
+    {
+        $myRolesIds = [];
+        foreach ($user->getRolesCollection() as $role) {
+            $myRolesIds[] = $role->getId();
+        }
 
+        if (empty($myRolesIds)) {
+            return;
+        }
+        $sql = "SELECT `user_id` FROM `user_role` WHERE `role_id` IN (".implode(',', $myRolesIds).")";
+        $result = $this->getEntityManager()->getConnection()->fetchAllNumeric($sql);
+
+        $user->setOtherUserIdsWithMyGroups($result);
+    }
 }

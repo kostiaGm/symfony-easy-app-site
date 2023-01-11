@@ -102,3 +102,4 @@ class Role implements SiteInterface
         return $this;
     }
 }
+

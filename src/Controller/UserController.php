@@ -130,16 +130,17 @@ class UserController extends AbstractController
                 $userRepository->add($user);
             }
 
-            if ($user->getPassword() !== null && $user->getPassword() !== $oldPassword) {
+            if ($user->getPassword() !== null ) {
                 $user->setPassword(
                     $userPasswordHasher->hashPassword(
                         $user,
-                        $form->get('plainPassword')->getData()
+                        $user->getPassword()
                     )
                 );
             } else {
                 $user->setPassword($oldPassword);
             }
+
 
             try {
                 $this->userRepository->add($user, true);

@@ -21,7 +21,7 @@ class UserType extends AbstractType
             ->add('password', PasswordType::class, [
                 'required' => false
             ])
-            ->add('roles', EntityType::class, [
+            ->add('rolesCollection', EntityType::class, [
                 'class' =>   Role::class,
                 'choice_label' => 'name',
                 'multiple' => true,

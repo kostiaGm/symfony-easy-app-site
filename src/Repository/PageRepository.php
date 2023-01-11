@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Menu;
 use App\Entity\Page;
+use App\Repository\Interfaces\UserPermissionInterface;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
 use App\Repository\Traits\UserPermissionTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -29,6 +30,7 @@ class PageRepository extends ServiceEntityRepository
         parent::__construct($registry, Page::class);
         $this->setAlias('p');
     }
+
 
     public function add(Page $entity, bool $flush = false): void
     {
@@ -57,41 +59,37 @@ class PageRepository extends ServiceEntityRepository
             ->addSelect('m')
             ;
 
-        $this->getUsersIdsByMyGroup();
-
-        dump($this->getActiveUser);
-
         return $queryBuilder;
     }
 
-    public function getBySlug(int $siteId, string $slug): IsJoinMenuInterface
+    public function getBySlugQueryBuilder(int $siteId, string $slug): QueryBuilder
     {
-        $queryBuilder = $this
+        return $this
             ->getAllQueryBuilder($siteId)
             ->andWhere('m.path=:slug')
             ->setParameter('slug', $slug)
         ;
-
-        $result = $queryBuilder->getQuery()->getOneOrNullResult();
-
-        if (empty($result)) {
-            throw new NotFoundHttpException("Page [ $slug ] not found");
-        }
-
-        return $result;
     }
 
-    public function getPreviewOnMain(int $siteId, int $limit): ?array
+    public function getByIdQueryBuilder(int $id): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilder()
+            ->andWhere("{$alias}.id=:id")
+            ->setParameter('id', $id)
+            ;
+    }
+
+    public function getPreviewOnMainQueryBuilder(int $siteId, int $limit): QueryBuilder
     {
         $alias = $this->getAlias();
         return $this
             ->getQueryBuilder()
             ->andWhere("{$alias}.siteId=:siteId")->setParameter("siteId", $siteId)
             ->andWhere("{$alias}.isOnMainPage=:isOnMainPage")->setParameter("isOnMainPage", true)
-            ->addOrderBy("{$alias}.id", "DESC")
             ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult()
+            ->addOrderBy("{$alias}.id", "DESC")
         ;
     }
 }

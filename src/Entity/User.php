@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @UniqueEntity(fields={"username"}, message="There is already an account with this username")
  */
-class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface//, \Serializable
 {
     use SiteTrait;
 
@@ -90,7 +90,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
 //    /**
 //     * @see UserInterface
 //     */
-    public function getRoles(): array
+    public function getRoles()
     {
         $result = [];
         foreach ($this->getRolesCollection()->toArray() as $item) {
@@ -103,6 +103,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
     {
         return $this->roles;
     }
+
 
     /**
      * @see PasswordAuthenticatedUserInterface
@@ -196,6 +197,5 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
         $this->otherUserIdsWithMyGroups = $otherUserIdsWithMyGroups;
         return $this;
     }
-
 
 }

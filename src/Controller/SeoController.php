@@ -6,6 +6,7 @@ use App\Entity\Seo;
 use App\Form\SeoType;
 use App\Repository\SeoRepository;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
+use App\Service\Interfaces\CacheKeyServiceInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,6 +20,7 @@ class SeoController extends AbstractController
     private SeoRepository $seoRepository;
     private ActiveSiteServiceInterface $activeSiteService;
     private LoggerInterface $logger;
+    private CacheKeyServiceInterface $cacheKeyService;
 
     private const SUCCESS_MESSAGE = 'SEO saved';
     private const DELETE_MESSAGE = 'SEO deleted';
@@ -28,11 +30,13 @@ class SeoController extends AbstractController
         PaginatorInterface $paginator,
         SeoRepository $seoRepository,
         ActiveSiteServiceInterface $activeSiteService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        CacheKeyServiceInterface $cacheKeyService
     ) {
         $this->paginator = $paginator;
         $this->seoRepository = $seoRepository;
         $this->activeSiteService = $activeSiteService;
+        $this->cacheKeyService = $cacheKeyService;
         $this->logger = $logger;
     }
 
@@ -139,9 +143,19 @@ class SeoController extends AbstractController
 
     public function detail($entity, int $siteId, SeoRepository $seoRepository): Response
     {
-        $seo = $seoRepository->getByEntity(get_class($entity), $siteId, $entity->getId());
-        $items = [];
+        $query = $seoRepository
+            ->getByEntityQueryBuilder(get_class($entity), $siteId, $entity->getId())
+            ->getQuery()
+        ;
 
+        $this
+            ->cacheKeyService
+            ->getQuery($query, 'seo_detail', 'seo_detail_'.$entity->getId())
+        ;
+
+        $seo = $query->getOneOrNullResult();
+
+        $items = [];
         if (!empty($seo)) {
             $items = $seo->getItems();
         }

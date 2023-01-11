@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
 use App\Controller\Traits\FileUploadTrait;
+use App\Controller\Traits\SeoSavingTrait;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Page;
 use App\Entity\Seo;
@@ -16,6 +17,9 @@ use App\Form\SeoType;
 use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeoRepository;
+use App\Service\CacheKeyService;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
+use App\Service\Interfaces\CacheKeyServiceInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,41 +28,63 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 
 class PageController extends AbstractController
 {
-    use ActiveTrait, FileUploadTrait;
+    use FileUploadTrait, SeoSavingTrait;
 
     private PageRepository $pageRepository;
     private SluggerInterface $slugger;
     private LoggerInterface $logger;
+    private ActiveSiteServiceInterface $activeSiteService;
+    private CacheKeyServiceInterface $cacheKeyService;
+    private PaginatorInterface $paginator;
+    private CacheInterface $cache;
 
     private const SUCCESS_MESSAGE = 'Page saved';
-    private const SUCCESS_SEO_MESSAGE = 'Page saved';
     private const DELETE_MESSAGE = 'Page deleted';
     private const ERROR_MESSAGE = "Error! Page not saved";
 
-    public function __construct(PageRepository $pageRepository, SluggerInterface $slugger, LoggerInterface $logger)
-    {
+    public function __construct(
+        PageRepository $pageRepository,
+        SluggerInterface $slugger,
+        ActiveSiteServiceInterface $activeSiteService,
+        LoggerInterface $logger,
+        CacheKeyServiceInterface $cacheKeyService,
+        PaginatorInterface $paginator,
+        CacheInterface $cache
+    ) {
         $this->pageRepository = $pageRepository;
         $this->slugger = $slugger;
+        $this->activeSiteService = $activeSiteService;
+        $this->cacheKeyService = $cacheKeyService;
         $this->logger = $logger;
+        $this->paginator = $paginator;
+        $this->cache = $cache;
     }
 
     /**
      * @Route("/admin/page", name="app_page_index", methods={"GET"})
      */
-    public function index(Request $request, PaginatorInterface $paginator): Response
+    public function index(Request $request): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
+        $query = $this->pageRepository
+            ->getAllQueryBuilder($this->activeSiteService->getId())
+            ->getQuery();
 
-        $pagination = $paginator->paginate(
+
+        //$this->cacheKeyService->getQuery($query);
+
+
+        $pagination = $this->paginator->paginate(
             $this->pageRepository
-                ->getAllQueryBuilder($siteId)
-                ->getQuery(),
+                ->getAllQueryBuilder($this->activeSiteService->getId())
+                ->getQuery()
+                ->useQueryCache(true),
             $request->query->getInt('page', 1),
-            $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5
+            $this->activeSiteService->get()['max_preview_pages'] ?? 5
         );
 
         return $this->render('page/index.html.twig', [
@@ -83,9 +109,10 @@ class PageController extends AbstractController
                 $this->pageRepository->add($page, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
-            } catch (\Throwable $exception) {
+            } catch (\Throwable $e) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
-                $this->logger->error($exception->getMessage());
+                $this->logger->error($e->getMessage());
+                throw $e;
             }
         }
 
@@ -98,8 +125,20 @@ class PageController extends AbstractController
     /**
      * @Route("/admin/page/{id}", name="app_page_show", methods={"GET"})
      */
-    public function show(Page $page): Response
+    public function show(int $id): Response
     {
+        $query = $this
+            ->pageRepository
+            ->getByIdQueryBuilder($id)
+            ->getQuery();
+
+        $this->cacheKeyService->getQuery($query);
+        $page = $query->getOneOrNullResult();
+
+        if (empty($page)) {
+            throw new NotFoundHttpException("Page [ $id ] not found");
+        }
+
         return $this->render('page/show.html.twig', [
             'page' => $page,
         ]);
@@ -135,6 +174,27 @@ class PageController extends AbstractController
                 }
 
                 $this->pageRepository->add($page, true);
+
+                $cacheItemsKey = CacheKeyService::get(CacheKeyService::setKeys(
+                    $this->activeSiteService->getId(),
+                    $this->activeSiteService->getDomain(),
+                    $this->getUser()->getId(),
+                    null,
+                    'app_page_detail'
+                ),  'app_page_preview', '_page_id_'.$page->getId());
+
+                //
+                $cacheDetailKey = CacheKeyService::get(CacheKeyService::setKeys(
+                    $this->activeSiteService->getId(),
+                    $this->activeSiteService->getDomain(),
+                    $this->getUser()->getId(),
+                    null,
+                    'app_page_detail'
+                ));
+
+                $this->cache->delete($cacheItemsKey);
+                $this->cache->delete($cacheDetailKey);
+
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
 
@@ -144,6 +204,7 @@ class PageController extends AbstractController
             } catch (\Throwable $e) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
                 $this->logger->error($e->getMessage());
+                throw $e;
             }
         }
 
@@ -172,95 +233,49 @@ class PageController extends AbstractController
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
     }
 
-    /**
-     * @Route("/admin/page/seo/{id}", name="app_page_seo", methods={"GET","POST"})
-     */
-    public function seo(Request $request, Page $page, SeoRepository $seoRepository): Response
-    {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $seo = $seoRepository->getByEntity(Page::class, $siteId, $page->getId()) ?? new Seo();
+    /* ******************************** End Admin ******************************************** */
 
-        $default = [];
-
-        if (!empty($page->getImage())) {
-            $imageParams = $this->getParameter('image');
-            $default['og:image'] = $page->getImage();
-            $default['og:image:url'] =
-                $request->getSchemeAndHttpHost() .
-                $imageParams['load_form_path']['small'] . '/' .
-                $page->getImage();
-
-            $default['og:image:width'] = $imageParams['size']['small']['width'];
-            $default['og:image:height'] = $imageParams['size']['small']['height'];
-            $default['og:image:alt'] = $page->getName();
-        }
-
-
-        $form = $this->createForm(SeoType::class, $seo, [
-                'exclude' => ['entity', 'entityId'],
-                'default' => $default
-            ]
-        );
-
-        $seo
-            ->setEntity(Page::class)
-            ->setEntityId($page->getId())
-            ->setSiteId($siteId);
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $seoRepository->deleteSubItems($seo);
-                $seoRepository->add($seo, true);
-                $this->addFlash('success', self::SUCCESS_SEO_MESSAGE);
-                return $this->redirectToRoute('app_page_seo', ['id' => $page->getId()]);
-            } catch (\Throwable $exception) {
-                $this->addFlash("error", self::ERROR_MESSAGE);
-                $this->logger->error($exception->getMessage());
-            }
-        }
-
-        return $this->renderForm('page/edit.html.twig', [
-            'page' => $page,
-            'form' => $form,
-        ]);
-    }
-
+    /* -------------------------------- Front ------------------------------------------------- */
 
     /**
-     * @Route("/", name="app_page_min", methods={"GET"})
+     * @Route("/", name="app_page_main", methods={"GET"})
      */
-    public function main(Request $request, PaginatorInterface $paginator): Response
+    public function main(Request $request): Response
     {
         try {
-            $siteId = $this->getActiveSiteId($request->getHost());
-            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
-            $query = $this
-                ->pageRepository
-                ->getAllQueryBuilder($siteId)
-                ->andWhere($this->pageRepository->getAlias() . ".isOnMainPage=:isOnMainPage")
-                ->setParameter("isOnMainPage", true)
-                ->addOrderBy($this->pageRepository->getAlias() . ".id", "DESC")
-                ->getQuery();
-
-            $pages = $paginator->paginate(
-                $query,
-                $request->query->getInt('page', 1),
-                $limit
+            $siteId = $this->activeSiteService->getId();
+            $queryBuilder = $this->pageRepository->getPreviewOnMainQueryBuilder(
+                $siteId,
+                $this->activeSiteService->get()['max_preview_pages'] ?? 5
             );
-            $page = $this->pageRepository->findOneBy([
-                'id' => $this->getActiveSite($request->getHost())['main_page_entity_id'] ?? 0,
-                'siteId' => $siteId
-            ]);
-        } catch (NotFoundHttpException $exception) {
+
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+            $queryPages = $queryBuilder->getQuery();
+            // Set/get in cache
+            $this->cacheKeyService->getQuery($queryPages);
+
+            //$this->denyAccessUnlessGranted('app_page_main', $queryBuilder);
+
+            $id = $this->activeSiteService->get()['main_page_entity_id'] ?? 0;
+            $queryBuilder = $this->pageRepository->getByIdQueryBuilder($id);
+
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+            $query = $queryBuilder->getQuery();
+
+            // Save/get in cache
+            $this->cacheKeyService->getQuery($query);
+
+            $page = $query->getOneOrNullResult();
 
         } catch (\Throwable $exception) {
             throw $exception;
         }
 
         return $this->render('page/main.html.twig', [
-            'pages' => $pages,
+            'pages' => $queryPages->getResult(),
             'page' => $page
         ]);
     }
@@ -268,10 +283,26 @@ class PageController extends AbstractController
     /**
      * @Route("/pages/{slug}", requirements={"slug"="[a-z0-9\/\-]*"}, name="app_page_detail", methods={"GET"})
      */
-    public function detail(Request $request, string $slug): Response
+    public function detail(string $slug): Response
     {
-        $siteId = $this->getActiveSiteId($request->getHost());
-        $page = $this->pageRepository->getBySlug($siteId, $slug);
+        $queryBuilder = $this->pageRepository->getBySlugQueryBuilder (
+            $this->activeSiteService->getId(),
+            $slug
+        );
+
+        // Check access
+        $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+
+        // Set/get to cache
+        $query = $queryBuilder->getQuery();
+        $this->cacheKeyService->getQuery($query);
+        $page = $query->getOneOrNullResult();
+
+        if ($page === null) {
+            throw new NotFoundHttpException("Page [ {$slug} ] not found");
+        }
+
         return $this->render('page/detail.html.twig', [
             'page' => $page
         ]);
@@ -280,14 +311,13 @@ class PageController extends AbstractController
     public function preview(
         Request            $request,
         Page               $page,
-        MenuRepository     $menuRepository,
-        PaginatorInterface $paginator
+        MenuRepository     $menuRepository
     ): Response {
 
         $pages = null;
 
         if ($page->isIsPreview() && $page->getMenu() instanceof NodeInterface) {
-            $limit = $this->getActiveSite($request->getHost())['max_preview_pages'] ?? 5;
+            $limit =  $this->activeSiteService->get()['max_preview_pages'] ?? 5;
 
             $queryBuilder = $this
                 ->pageRepository
@@ -295,13 +325,20 @@ class PageController extends AbstractController
                 ->innerJoin($this->pageRepository->getAlias() . ".menu", $menuRepository->getAlias());
 
             $queryBuilder = $menuRepository
-                ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder);
+                ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder, false);
 
             $queryBuilder
                 ->orderBy($this->pageRepository->getAlias() . ".id");
 
-            $pages = $paginator->paginate(
-                $queryBuilder->getQuery(),
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+            // Set/get to cache
+            $query = $queryBuilder->getQuery();
+            $this->cacheKeyService->getQuery($query, 'app_page_preview', '_page_id_'.$page->getId());
+
+            $pages = $this->paginator->paginate(
+                $query,
                 $request->query->getInt('page', 1),
                 $limit
             );
@@ -311,6 +348,12 @@ class PageController extends AbstractController
         return $this->render('page/preview.html.twig', [
             'pages' => $pages
         ]);
+    }
+    /* ******************************** End Front ******************************************** */
+
+    private static function getEntityClass(): ?string
+    {
+        return Page::class;
     }
 }
 
