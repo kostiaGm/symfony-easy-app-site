@@ -3,7 +3,7 @@
     <div class="card-header">
         {% include 'elements/form_tab.html.twig' with {items: [
             {title: 'Main', route:  page.id is null ? 'app_page_new' : 'app_page_edit', params: {id: page.id}},
-            {title: 'Seo', route: 'app_page_seo', params: {id: page.id}, disable: page.id is null},
+            {title: 'Seo', route: 'app_seo', params: {id: page.id}, disable: page.id is null},
         ]}
         %}
     </div>

@@ -31,4 +31,14 @@ trait GetQueryBuilderRepositoryTrait
         }
         return $queryBuilder;
     }
+
+    public function getDataLength(int $siteId): int
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilderWithSiteId($siteId)
+            ->select("COUNT({$alias})")
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

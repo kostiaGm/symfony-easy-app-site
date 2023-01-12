@@ -8,6 +8,8 @@ imports:
     - { resource: site/*.yaml }
 
 parameters:
+    redis_host: '%env(REDIS_HOST)%'
+    redis_port: '%env(REDIS_PORT)%'
 
 twig:
     globals:
@@ -15,6 +17,8 @@ twig:
         image: '%image%'
 
 services:
+
+
 
     # default configuration for services in *this* file
     _defaults:
@@ -42,17 +46,3 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    Redis:
-        # you can also use \RedisArray, \RedisCluster or \Predis\Client classes
-        class: Redis
-        calls:
-            - connect:
-                  - '%env(REDIS_HOST)%'
-                  - '%env(int:REDIS_PORT)%'
-
-            # uncomment the following if your Redis server requires a password
-            # - auth:
-            #     - '%env(REDIS_PASSWORD)%'
-    Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
-        arguments:
-            - '@Redis'

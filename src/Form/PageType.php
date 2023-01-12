@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Entity\Interfaces\NodeInterface;
+use App\Entity\Interfaces\PermissionInterface;
 use App\Entity\Menu;
 use App\Entity\Page;
 use App\Service\Traits\ActiveSiteTrait;
@@ -83,6 +84,8 @@ class PageType extends AbstractType
                         'mimeTypesMessage' => 'Please upload a valid document',
                     ])
                 ]
+            ])->add('permissionMode', ChoiceType::class, [
+                'choices' => array_flip(PermissionInterface::TYPES)
             ])
         ;
     }

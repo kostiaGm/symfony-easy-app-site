@@ -2,12 +2,14 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\AuthorInterface;
 use App\Entity\Interfaces\ChangeDataDayInterface;
 use App\Entity\Interfaces\MenuInterface;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Interfaces\OwnerInterface;
 use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
+use App\Entity\Traits\AuthorTrait;
 use App\Entity\Traits\ChangeDataDayTrait;
 use App\Entity\Traits\NodeTrait;
 use App\Entity\Traits\OwnerTrait;
@@ -30,6 +32,9 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
  * @ORM\Table(
  *     indexes={
  *          @ORM\Index(
+ *                  name="is_bottom_menu", columns={"is_bottom_menu"},
+ *                  name="is_left_menu", columns={"is_left_menu"},
+ *                  name="is_top_menu", columns={"is_top_menu"},
  *                  name="lft", columns={"lft"},
  *                  name="lft_rgt", columns={"lft", "rgt"},
  *                  name="id_lft_rgt", columns={"id", "lft", "rgt"},
@@ -43,7 +48,9 @@ class Menu implements
     StatusInterface,
     ChangeDataDayInterface,
     SiteInterface,
-    OwnerInterface, MenuInterface
+    OwnerInterface,
+    MenuInterface,
+    AuthorInterface
 {
     public const SITE_PAGE_TYPE = 1;
     public const EXTERNAL_PAGE_TYPE = 2;
@@ -60,7 +67,8 @@ class Menu implements
         ChangeDataDayTrait,
         NodeTrait,
         SiteTrait,
-        OwnerTrait
+        OwnerTrait,
+        AuthorTrait
         ;
 
     /**

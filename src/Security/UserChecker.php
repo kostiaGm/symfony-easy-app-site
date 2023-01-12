@@ -3,25 +3,17 @@
 namespace App\Security;
 
 use App\Entity\User;
-use App\Service\Traits\ActiveSiteTrait;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Security\Core\Exception\AccountExpiredException;
+use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class UserChecker implements UserCheckerInterface
 {
-    use ActiveSiteTrait;
-
-    private ParameterBagInterface $params;
-    private RequestStack $request;
-
-    public function __construct(ParameterBagInterface $params, RequestStack $request)
+    private ActiveSiteServiceInterface $activeSiteService;
+    public function __construct(ActiveSiteServiceInterface $activeSiteService)
     {
-        $this->params = $params;
-        $this->request = $request;
+        $this->activeSiteService = $activeSiteService;
     }
 
     public function checkPreAuth(UserInterface $user): void
@@ -33,7 +25,7 @@ class UserChecker implements UserCheckerInterface
 
     public function checkPostAuth(UserInterface $user): void
     {
-        if (!$user || $user->getSiteId() != $this->getActiveSiteId()) {
+        if (!$user || $user->getSiteId() != $this->activeSiteService->getId()) {
             throw new CustomUserMessageAccountStatusException('Your user account not found.');
         }
     }

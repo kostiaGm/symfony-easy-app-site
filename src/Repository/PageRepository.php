@@ -5,7 +5,9 @@ namespace App\Repository;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Menu;
 use App\Entity\Page;
+use App\Repository\Interfaces\UserPermissionInterface;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
+use App\Repository\Traits\UserPermissionTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,7 +23,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class PageRepository extends ServiceEntityRepository
 {
-    use GetQueryBuilderRepositoryTrait/*,GetEntityBySugTrait*/;
+    use GetQueryBuilderRepositoryTrait, UserPermissionTrait;
 
     public function __construct(ManagerRegistry $registry)
     {
@@ -50,13 +52,13 @@ class PageRepository extends ServiceEntityRepository
     public function getAllQueryBuilder(int $siteId): QueryBuilder
     {
         $alias = $this->getAlias();
-        return $this
-            ->getQueryBuilder()
+        $queryBuilder = $this
+            ->getQueryBuilderWithSiteId($siteId)
             ->leftJoin("{$alias}.menu", 'm')
             ->addSelect('m')
-            ->andWhere("{$alias}.siteId=:siteId")
-            ->setParameter('siteId', $siteId)
             ;
+
+        return $queryBuilder;
     }
 
     public function getBySlugQueryBuilder(int $siteId, string $slug): QueryBuilder
@@ -78,15 +80,18 @@ class PageRepository extends ServiceEntityRepository
             ;
     }
 
-    public function getPreviewOnMainQueryBuilder(int $siteId): QueryBuilder
+    public function getPreviewOnMainQueryBuilder(int $siteId, int $limit): QueryBuilder
     {
         $alias = $this->getAlias();
         return $this
             ->getQueryBuilder()
+            ->innerJoin("{$alias}.menu", "m")
+            ->addSelect("m")
             ->andWhere("{$alias}.siteId=:siteId")->setParameter("siteId", $siteId)
             ->andWhere("{$alias}.isOnMainPage=:isOnMainPage")->setParameter("isOnMainPage", true)
+            ->setMaxResults($limit)
             ->addOrderBy("{$alias}.id", "DESC")
         ;
     }
-
 }
+

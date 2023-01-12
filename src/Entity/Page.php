@@ -2,20 +2,24 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\AuthorInterface;
 use App\Entity\Interfaces\ChangeDataDayInterface;
 use App\Entity\Interfaces\ImageInterface;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Interfaces\IsOnMainPageInterface;
 use App\Entity\Interfaces\OwnerInterface;
+use App\Entity\Interfaces\PermissionInterface;
 use App\Entity\Interfaces\PreviewBodyTextInterface;
 use App\Entity\Interfaces\SeoInterface;
 use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
+use App\Entity\Traits\AuthorTrait;
 use App\Entity\Traits\ChangeDataDayTrait;
 use App\Entity\Traits\ImageTrait;
 use App\Entity\Traits\IsJoinMenuTrait;
 use App\Entity\Traits\IsOnMainPageTrait;
 use App\Entity\Traits\OwnerTrait;
+use App\Entity\Traits\PermissionTrait;
 use App\Entity\Traits\PreviewBodyTextTrait;
 use App\Entity\Traits\SeoTrait;
 use App\Entity\Traits\SiteTrait;
@@ -43,7 +47,9 @@ class Page implements
     IsJoinMenuInterface,
     SiteInterface,
     ImageInterface,
-    OwnerInterface
+    OwnerInterface,
+    PermissionInterface,
+    AuthorInterface
 {
     use ChangeDataDayTrait,
         PreviewBodyTextTrait,
@@ -52,8 +58,9 @@ class Page implements
         IsJoinMenuTrait,
         SiteTrait,
         ImageTrait,
-        OwnerTrait
-
+        OwnerTrait,
+        PermissionTrait,
+        AuthorTrait
         ;
     /**
      * @ORM\Id
@@ -129,6 +136,5 @@ class Page implements
 
         return $this;
     }
-
 }
 

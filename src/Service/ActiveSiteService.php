@@ -34,4 +34,12 @@ class ActiveSiteService implements ActiveSiteServiceInterface
     {
         return $this->request->getCurrentRequest()->getHost();
     }
+
+    /**
+     * @return string
+     */
+    public function getRoute(): string
+    {
+        return $this->request->getCurrentRequest()->get('_route');
+    }
 }

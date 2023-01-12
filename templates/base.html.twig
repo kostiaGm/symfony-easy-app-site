@@ -25,7 +25,12 @@
     {# top menu #}
     {{ render(controller('App\\Controller\\MenuController::topMenu')) }}
 
+
     <div class="row align-items-start">
+        <div class="col col-lg-12 col-md-12 col-sm-12">
+            <h1>{% block h1 %}{% endblock %}</h1>
+            <hr>
+        </div>
         <div class="col col-lg-3 col-md-12 col-sm-12">
             {# left menu #}
             {% include 'menu/admin_menu.html.twig' with ({items: [
@@ -34,21 +39,18 @@
                 {'route' : 'app_seo_index', 'title': 'Seo'},
                 {'route' : 'app_user_index', 'title': 'Users'},
                 {'route' : 'app_cache_manager', 'title': 'Cache Manager'},
+                {'route' : 'app_role_new', 'title': 'Roles'},
             ]}) %}
 
             {{ render(controller('App\\Controller\\MenuController::leftMenu', {request: app.request})) }}
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
-
             {% if page.menu is defined and page.menu.id is defined %}
-               {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
+                {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
-
-            <h1>{% block h1 %}{% endblock %}</h1>
-            <hr>
-
             {% include 'elements/flush.html.twig' %}
+
             {% block body %}{% endblock %}
         </div>
     </div>

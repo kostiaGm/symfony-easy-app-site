@@ -22,9 +22,7 @@
                      height="{{ image.size.small.height  }}"
                      align="left"
                      class="m-2"
-                     alt="{{ preview.name }}"
-
-                >
+                     alt="{{ preview.name }}">
             </a>
             {% endif %}
             <p class="card-text">{{ preview.preview }}</p>
@@ -34,7 +32,7 @@
     </div>
 {% endfor %}
 
-{% if pages is not null %}
+{% if pages.route is defined and pages is not empty %}
 <div class="navigation">
     {{ knp_pagination_render(pages) }}
 </div>

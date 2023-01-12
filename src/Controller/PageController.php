@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
+use App\Controller\Traits\CacheTrait;
 use App\Controller\Traits\FileUploadTrait;
+use App\Controller\Traits\SeoSavingTrait;
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Page;
 use App\Entity\Seo;
@@ -27,11 +29,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 
 class PageController extends AbstractController
 {
-    use FileUploadTrait;
+    use FileUploadTrait, SeoSavingTrait;
 
     private PageRepository $pageRepository;
     private SluggerInterface $slugger;
@@ -39,9 +42,9 @@ class PageController extends AbstractController
     private ActiveSiteServiceInterface $activeSiteService;
     private CacheKeyServiceInterface $cacheKeyService;
     private PaginatorInterface $paginator;
+    private CacheInterface $cache;
 
     private const SUCCESS_MESSAGE = 'Page saved';
-    private const SUCCESS_SEO_MESSAGE = 'SEO saved';
     private const DELETE_MESSAGE = 'Page deleted';
     private const ERROR_MESSAGE = "Error! Page not saved";
 
@@ -51,7 +54,8 @@ class PageController extends AbstractController
         ActiveSiteServiceInterface $activeSiteService,
         LoggerInterface $logger,
         CacheKeyServiceInterface $cacheKeyService,
-        PaginatorInterface $paginator
+        PaginatorInterface $paginator,
+        CacheInterface $cache
     ) {
         $this->pageRepository = $pageRepository;
         $this->slugger = $slugger;
@@ -59,6 +63,7 @@ class PageController extends AbstractController
         $this->cacheKeyService = $cacheKeyService;
         $this->logger = $logger;
         $this->paginator = $paginator;
+        $this->cache = $cache;
     }
 
     /**
@@ -66,11 +71,11 @@ class PageController extends AbstractController
      */
     public function index(Request $request): Response
     {
+        $this->denyAccessUnlessGranted(__FUNCTION__);
+
         $query = $this->pageRepository
             ->getAllQueryBuilder($this->activeSiteService->getId())
             ->getQuery();
-
-        $this->cacheKeyService->getQuery($query);
 
         $pagination = $this->paginator->paginate(
             $this->pageRepository
@@ -93,6 +98,7 @@ class PageController extends AbstractController
     {
         $page = new Page();
 
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
         $form = $this->createForm(PageType::class, $page);
         $form->handleRequest($request);
 
@@ -103,9 +109,10 @@ class PageController extends AbstractController
                 $this->pageRepository->add($page, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
-            } catch (\Throwable $exception) {
+            } catch (\Throwable $e) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
-                $this->logger->error($exception->getMessage());
+                $this->logger->error($e->getMessage());
+                throw $e;
             }
         }
 
@@ -125,12 +132,13 @@ class PageController extends AbstractController
             ->getByIdQueryBuilder($id)
             ->getQuery();
 
-        $this->cacheKeyService->getQuery($query);
         $page = $query->getOneOrNullResult();
 
         if (empty($page)) {
             throw new NotFoundHttpException("Page [ $id ] not found");
         }
+
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
 
         return $this->render('page/show.html.twig', [
             'page' => $page,
@@ -150,11 +158,12 @@ class PageController extends AbstractController
         $form = $this->createForm(PageType::class, $page);
         $oidMenu = $page->getMenu();
 
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
         $form->handleRequest($request);
+
         if ($form->isSubmitted() && $form->isValid()) {
 
             try {
-
                 if (empty($oidMenu)) {
                     $dBSMenu->create($page);
                 } elseif (!empty($page->getMenu()) && !empty($oidMenu) && $page->getMenu()->getId() != $oidMenu->getId()) {
@@ -177,6 +186,7 @@ class PageController extends AbstractController
             } catch (\Throwable $e) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
                 $this->logger->error($e->getMessage());
+                throw $e;
             }
         }
 
@@ -191,6 +201,8 @@ class PageController extends AbstractController
      */
     public function delete(Request $request, Page $page): Response
     {
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
+
         if ($this->isCsrfTokenValid('delete' . $page->getId(), $request->request->get('_token'))) {
             try {
                 $this->removeImage($page->getImage());
@@ -205,75 +217,9 @@ class PageController extends AbstractController
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
     }
 
-    /**
-     * @Route("/admin/page/seo/{id}", name="app_page_seo", methods={"GET","POST"})
-     */
-    public function seo(int $id, Request $request, SeoRepository $seoRepository): Response
-    {
-        $query = $this
-            ->pageRepository
-            ->getByIdQueryBuilder($id)
-            ->getQuery();
+    /* ******************************** End Admin ******************************************** */
 
-        $page = $query->getOneOrNullResult();
-
-        if (empty($page)) {
-            throw new NotFoundHttpException("Page [ $id ] not found");
-        }
-
-        $siteId = $this->activeSiteService->getId();
-        $query = $seoRepository
-            ->getByEntityQueryBuilder(Page::class, $siteId, $page->getId())
-            ->getQuery()
-        ;
-
-        $seo = $query->getOneOrNullResult();
-        $default = [];
-
-        if (!empty($page->getImage())) {
-            $imageParams = $this->getParameter('image');
-            $default['og:image'] = $page->getImage();
-            $default['og:image:url'] =
-                $request->getSchemeAndHttpHost() .
-                $imageParams['load_form_path']['small'] . '/' .
-                $page->getImage();
-
-            $default['og:image:width'] = $imageParams['size']['small']['width'];
-            $default['og:image:height'] = $imageParams['size']['small']['height'];
-            $default['og:image:alt'] = $page->getName();
-        }
-
-        $form = $this->createForm(SeoType::class, $seo, [
-                'exclude' => ['entity', 'entityId'],
-                'default' => $default
-            ]
-        );
-
-        $seo
-            ->setEntity(Page::class)
-            ->setEntityId($page->getId())
-            ->setSiteId($siteId);
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $seoRepository->deleteSubItems($seo);
-                $seoRepository->add($seo, true);
-                $this->addFlash('success', self::SUCCESS_SEO_MESSAGE);
-                return $this->redirectToRoute('app_page_seo', ['id' => $page->getId()]);
-            } catch (\Throwable $exception) {
-                $this->addFlash("error", self::ERROR_MESSAGE);
-                $this->logger->error($exception->getMessage());
-            }
-        }
-
-        return $this->renderForm('page/edit.html.twig', [
-            'page' => $page,
-            'form' => $form,
-        ]);
-    }
-
+    /* -------------------------------- Front ------------------------------------------------- */
 
     /**
      * @Route("/", name="app_page_main", methods={"GET"})
@@ -282,34 +228,38 @@ class PageController extends AbstractController
     {
         try {
             $siteId = $this->activeSiteService->getId();
-            $query = $this->pageRepository->getPreviewOnMainQueryBuilder($siteId)->getQuery();
-
-            $this->cacheKeyService->getQuery($query);
-
-            $pages = $this->paginator->paginate(
-                $query,
-                $request->query->getInt('page', 1),
+            $queryBuilder = $this->pageRepository->getPreviewOnMainQueryBuilder(
+                $siteId,
                 $this->activeSiteService->get()['max_preview_pages'] ?? 5
             );
 
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+            $queryPages = $queryBuilder->getQuery();
+            // Set/get in cache
+            $this->cacheKeyService->getQuery($queryPages);
+
+            //$this->denyAccessUnlessGranted('app_page_main', $queryBuilder);
+
             $id = $this->activeSiteService->get()['main_page_entity_id'] ?? 0;
-            $query = $this->pageRepository->getByIdQueryBuilder($id)->getQuery();
+            $queryBuilder = $this->pageRepository->getByIdQueryBuilder($id);
+
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+            $query = $queryBuilder->getQuery();
+
+            // Save/get in cache
             $this->cacheKeyService->getQuery($query);
+
             $page = $query->getOneOrNullResult();
-
-            if (empty($page)) {
-                throw new NotFoundHttpException("Page [ $id ] not found");
-            }
-
-
-        } catch (NotFoundHttpException $exception) {
 
         } catch (\Throwable $exception) {
             throw $exception;
         }
 
         return $this->render('page/main.html.twig', [
-            'pages' => $pages,
+            'pages' => $queryPages->getResult(),
             'page' => $page
         ]);
     }
@@ -319,14 +269,25 @@ class PageController extends AbstractController
      */
     public function detail(string $slug): Response
     {
-        $query = $this->pageRepository->getBySlugQueryBuilder (
+        $queryBuilder = $this->pageRepository->getBySlugQueryBuilder (
             $this->activeSiteService->getId(),
             $slug
-        )->getQuery();
+        );
 
+        // Check access
+        $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+
+        // Set/get to cache
+        $query = $queryBuilder->getQuery();
         $this->cacheKeyService->getQuery($query);
         $page = $query->getOneOrNullResult();
 
+        if ($page === null) {
+            throw new NotFoundHttpException("Page [ {$slug} ] not found");
+        }
+
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
 
         return $this->render('page/detail.html.twig', [
             'page' => $page
@@ -350,13 +311,24 @@ class PageController extends AbstractController
                 ->innerJoin($this->pageRepository->getAlias() . ".menu", $menuRepository->getAlias());
 
             $queryBuilder = $menuRepository
-                ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder);
+                ->getParentsByItemQueryBuilder(
+                    $page->getMenu(),
+                    $page->getPreviewDeep(),
+                    $queryBuilder,
+                    false
+                );
+
+            $queryBuilder->addSelect($menuRepository->getAlias());
 
             $queryBuilder
                 ->orderBy($this->pageRepository->getAlias() . ".id");
 
+            // Check access
+            $this->pageRepository->getUsersIdsByMyGroup($queryBuilder, $this->getUser());
+
+            // Set/get to cache
             $query = $queryBuilder->getQuery();
-            $this->cacheKeyService->getQuery($query);
+            $this->cacheKeyService->getQuery($query, 'app_page_preview', '_page_id_'.$page->getId());
 
             $pages = $this->paginator->paginate(
                 $query,
@@ -365,9 +337,16 @@ class PageController extends AbstractController
             );
         }
 
+
         return $this->render('page/preview.html.twig', [
             'pages' => $pages
         ]);
+    }
+    /* ******************************** End Front ******************************************** */
+
+    private static function getEntityClass(): ?string
+    {
+        return Page::class;
     }
 }
 
