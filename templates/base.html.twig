@@ -23,7 +23,7 @@
 <div class="container">
 
     {# top menu #}
-    {{ render(controller('App\\Controller\\MenuController::topMenu', {rootId: 1})) }}
+    {{ render(controller('App\\Controller\\MenuController::topMenu')) }}
 
     <div class="row align-items-start">
         <div class="col col-lg-3 col-md-12 col-sm-12">
@@ -33,6 +33,7 @@
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
                 {'route' : 'app_seo_index', 'title': 'Seo'},
                 {'route' : 'app_user_index', 'title': 'Users'},
+                {'route' : 'app_cache_manager', 'title': 'Cache Manager'},
                 {'route' : 'app_role_new', 'title': 'Roles'},
             ]}) %}
 
@@ -41,7 +42,7 @@
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
 
-            {% if page.menu is defined and page.menu in not null %}
+            {% if page.menu is defined and page.menu.id is defined %}
                {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
 

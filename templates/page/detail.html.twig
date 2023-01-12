@@ -1,15 +1,20 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ page.name }}{% endblock %}
-{% block h1 %}{{ page.name }}{% endblock %}
+{% block title %}{{ page.name is defined ? page.name }}{% endblock %}
+{% block h1 %}{{ page.name is defined ?  page.name }}{% endblock %}
 
 {% block body %}
 
-    <p>{{ page.preview }}</p>
-
-    {{ render(controller('App\\Controller\\PageController::preview', {request: app.request, page:page})) }}
-
-    <p>{{ page.body }}</p>
-
+    {% if page.id is defined %}
+        <p>{{ page.preview }}</p>
+        {{ render(controller('App\\Controller\\PageController::preview', {request: app.request, page:page})) }}
+        {% if page.image is defined %}
+            <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.big }}/{{ page.image }}"
+                 class="card-img-top" alt="{{ page.name }}">
+        {% endif %}
+        <p>{{ page.body }}</p>
+    {% else %}
+        {% include 'elements/data_is_empty.html.twig' %}
+    {% endif %}
 
 {% endblock %}

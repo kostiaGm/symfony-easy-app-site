@@ -19,11 +19,27 @@ class ActiveSiteService implements ActiveSiteServiceInterface
 
     public function get(): array
     {
-        return $this->parameter->get('site')[$this->request->getCurrentRequest()->getHost()] ?? [];
+        return $this->parameter->get('site')[$this->getDomain()] ?? [];
     }
 
     public function getId(int $default = 0): int
     {
         return $this->get()['id'] ?? $default;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDomain(): string
+    {
+        return $this->request->getCurrentRequest()->getHost();
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoute(): string
+    {
+        return $this->request->getCurrentRequest()->get('_route');
     }
 }

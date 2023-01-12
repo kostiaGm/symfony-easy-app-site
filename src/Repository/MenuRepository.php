@@ -110,16 +110,26 @@ class MenuRepository extends ServiceEntityRepository
     public function getParentsByItemQueryBuilder(
         NodeInterface $menu,
         ?int $deep = null,
-        ?QueryBuilder $queryBuilder = null
+        ?QueryBuilder $queryBuilder = null,
+        bool $isIncludeCurrentNode = true
     ): QueryBuilder {
 
         $alias = $this->getAlias();
 
         $queryBuilder = $this
             ->getQueryBuilder($queryBuilder)
-            ->andWhere("{$alias}.lft<=:lft")->setParameter('lft', $menu->getLft())
-            ->andWhere("{$alias}.rgt>=:rgt")->setParameter('rgt', $menu->getRgt())
-            ->andWhere("{$alias}.tree=:tree")->setParameter('tree', $menu->getTree());
+            ->andWhere("{$alias}.tree=:tree")
+            ->setParameter('tree', $menu->getTree());
+
+        if ($isIncludeCurrentNode) {
+            $queryBuilder
+                ->andWhere("{$alias}.lft<=:lft")->setParameter('lft', $menu->getLft())
+                ->andWhere("{$alias}.rgt>=:rgt")->setParameter('rgt', $menu->getRgt());
+        } else {
+            $queryBuilder
+                ->andWhere("{$alias}.lft<:lft")->setParameter('lft', $menu->getLft())
+                ->andWhere("{$alias}.rgt>:rgt")->setParameter('rgt', $menu->getRgt());
+        }
 
         if ($deep !== null) {
             $queryBuilder
@@ -158,14 +168,16 @@ class MenuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getAllMenuQueryBuilder(int $siteId, ?int $treeId = null): ?QueryBuilder
+    public function getAllMenuQueryBuilder(int $siteId, array $params = []): ?QueryBuilder
     {
         $queryBuilder = $this->getAllQueryBuilder($siteId);
+        $alias = $this->getAlias();
 
-        if ($treeId !== null) {
+        foreach ($params as $key => $value) {
             $queryBuilder
-                ->andWhere($this->getAlias() . ".tree=:tree")
-                ->setParameter("tree", $treeId);
+                ->andWhere("{$alias}.{$key}=:{$key}")
+                ->setParameter($key, $value);
+            ;
         }
 
         return $queryBuilder;
@@ -181,19 +193,5 @@ class MenuRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult()
             ;
-    }
-
-    public function getAllMenu(int $siteId, array $params = []): ?array
-    {
-        $queryBuilder = $this->getAllMenuQueryBuilder($siteId, $params['treeId'] ?? null);
-        $alias = $this->getAlias();
-
-        foreach ($params as $key => $value) {
-            $queryBuilder
-                ->andWhere("{$alias}.{$key}=:{$key}")
-                ->setParameter($key, $value);
-            ;
-        }
-        return $queryBuilder->getQuery()->getResult();
     }
 }

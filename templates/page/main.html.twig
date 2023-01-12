@@ -1,23 +1,25 @@
 {% extends 'base.html.twig' %}
 
-
 {% block title %}{{ page.name is defined ? page.name }}{% endblock %}
- {% block h1 %}{{ page.name is defined ?  page.name }}{% endblock %}
-
+{% block h1 %}{{ page.name is defined ?  page.name }}{% endblock %}
 
 {% block body %}
 
-  {% if page.image is defined %}
-  {% include 'page/preview.html.twig' with {pages: pages} %}
+    {% include 'page/preview.html.twig' with {pages: pages} %}
+    {% if page.id is defined %}
 
-    <div class="card">
-        <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.big }}/{{ page.image }}"
-             class="card-img-top" alt="{{ page.name }}">
+        <div class="card">
+            {% if page.image is defined %}
+                <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.big }}/{{ page.image }}"
+                     class="card-img-top" alt="{{ page.name }}">
+            {% endif %}
+            <div class="card-body">
+                <p class="card-text">{{ page.body }}</p>
 
-        <div class="card-body">
-            <p class="card-text">{{ page.body }}</p>
-
+            </div>
         </div>
-    </div>
-{% endif %}
+    {% else %}
+        {% include 'elements/data_is_empty.html.twig' %}
+    {% endif %}
+
 {% endblock %}

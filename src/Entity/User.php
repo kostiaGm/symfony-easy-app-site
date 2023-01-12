@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @UniqueEntity(fields={"username"}, message="There is already an account with this username")
  */
-class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface//, \Serializable
 {
     use SiteTrait;
 
@@ -31,11 +31,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
      * @ORM\Column(type="string", length=180, unique=true)
      */
     private $username;
-
-//   /* /**
-//     * @ORM\Column(type="json")
-//     */
-//    private $roles = [];*/
 
     /**
      * @var string The hashed password
@@ -87,10 +82,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
         return $this;
     }
 
-//    /**
-//     * @see UserInterface
-//     */
-    public function getRoles(): array
+    public function getRoles()
     {
         $result = [];
         foreach ($this->getRolesCollection()->toArray() as $item) {
@@ -103,6 +95,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
     {
         return $this->roles;
     }
+
 
     /**
      * @see PasswordAuthenticatedUserInterface
@@ -196,6 +189,5 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, SiteInt
         $this->otherUserIdsWithMyGroups = $otherUserIdsWithMyGroups;
         return $this;
     }
-
 
 }
