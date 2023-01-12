@@ -40,9 +40,9 @@
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
-{{ dump(app.getUser) }}
+
             {% if page.menu is defined and page.menu in not null %}
-  {#             {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}#}
+               {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
 
             <h1>{% block h1 %}{% endblock %}</h1>

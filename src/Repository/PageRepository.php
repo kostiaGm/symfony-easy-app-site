@@ -59,8 +59,6 @@ class PageRepository extends ServiceEntityRepository
 
         $this->getUsersIdsByMyGroup();
 
-        dump($this->getActiveUser);
-
         return $queryBuilder;
     }
 
