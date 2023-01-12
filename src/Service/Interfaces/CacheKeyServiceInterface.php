@@ -9,13 +9,14 @@ interface CacheKeyServiceInterface
     public const KEYS = [
         'app_page_index' => [
             'detail' => 'Page index',
-            'key' => 'SITE_ID##ACTIVE_ROUTE##USER_ID##PAGE_ID'
+            'key' => 'SITE_ID##ACTIVE_ROUTE##USER_ID##PAGE_ID',
+            'expire' => 320
         ],
 
         'app_page_detail' => [
             'detail' => 'Page detail',
             'key' => 'SITE_ID##ACTIVE_ROUTE##USER_ID',
-            'expire' => 40
+            'expire' => 320
         ],
 
         'app_page_preview' => [
@@ -52,6 +53,7 @@ interface CacheKeyServiceInterface
             'detail' => 'Seo detail',
             'key' => 'SITE_ID##USER_ID',
         ],
+
     ];
 
     public static function get(array $replacedKeys, ?string $key = null, string $prefix = ''): ?array;

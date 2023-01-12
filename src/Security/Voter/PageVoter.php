@@ -15,13 +15,15 @@ class PageVoter extends Voter
 {
     private LoggerInterface $logger;
 
-    protected const VIEW = 'view';
+    protected const INDEX = 'index';
+    protected const VIEW = 'show';
     protected const EDIT = 'edit';
     protected const DETAIL = 'detail';
     protected const DELETE = 'delete';
     protected const CREATE = 'create';
 
     protected const ATTRIBUTES = [
+        self::INDEX,
         self::VIEW,
         self::EDIT,
         self::DETAIL,
@@ -30,14 +32,13 @@ class PageVoter extends Voter
     ];
 
     protected const VIEWS = [
+        self::INDEX,
         self::VIEW,
         self::DETAIL
     ];
 
-    protected const EDITS = [
-        self::EDIT,
-        self::DELETE,
-        self::CREATE,
+    private const WITHOUT_ENTITY = [
+        self::INDEX
     ];
 
     public function __construct(LoggerInterface $logger)
@@ -52,8 +53,8 @@ class PageVoter extends Voter
             return false;
         }
 
-        if (!$subject instanceof Page) {
-            $this->logger->debug("page.voter: subject isn't type [".get_class(Page::class)."] not found");
+        if (!in_array($attribute, self::WITHOUT_ENTITY) && !$subject instanceof Page) {
+            $this->logger->debug("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
             return false;
         }
 
@@ -66,30 +67,40 @@ class PageVoter extends Voter
             $this->logger->debug("page.voter: user token is empty");
             return false;
         }
+
         if (($user = $token->getUser()) === null) {
             $this->logger->debug("page.voter: user not found");
             return false;
         }
 
-        if (!$subject instanceof Page) {
-            $this->logger->debug("page.voter: subject isn't type [".get_class(Page::class)."] not found");
+        if (!in_array($attribute, self::WITHOUT_ENTITY) && !$subject instanceof Page) {
+            $this->logger->debug("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
             return false;
+        }
+
+        $authorRoles = [];
+        $isAuthorTheSameAsActiveUser = false;
+
+        $debugIndo = [
+            "action" => $attribute,
+            "user" => $user->getId()
+        ];
+
+        if (!in_array($attribute, self::WITHOUT_ENTITY) && $subject->getAuthor()) {
+            $authorRoles = $subject->getAuthor()->getRoles();
+            $isAuthorTheSameAsActiveUser = $subject->getAuthor()->getId() == $user->getId();
+            $debugIndo["page"] = $subject->getId();
+            $debugIndo["author"] = $subject->getAuthor()->getId();
         }
 
         $intersectGroups = array_intersect(
             $user->getRoles(),
-            $subject->getAuthor()->getRoles()
+            $authorRoles
         );
 
-        $isAuthorTheSameAsActiveUser = $subject->getAuthor()->getId() == $user->getId();
-        $debugIndo =  [
-            "page" => $subject->getId(),
-            "action" => $attribute,
-            "author" =>  $subject->getAuthor()->getId(),
-            "user" =>  $user->getId()
-        ];
+        $permissionMode = $subject !== null ? $subject->getPermissionMode() : null;
 
-        switch ($subject->getPermissionMode()) {
+        switch ($permissionMode) {
 
             case PermissionInterface::AUTHOR_ONLY_READING_ALLOWED:
 
@@ -127,12 +138,20 @@ class PageVoter extends Voter
                         !empty(array_intersect($user->getRoles(), $subject->getAuthor()->getRoles())));
 
                 if (!$result) {
-                    $debugIndo["allowed actions"] = implode(',', self::VIEWS);
+                    $debugIndo["allowed actions"] = implode(',', self::ATTRIBUTES);
                     $debugIndo["found common groups"] = implode(',', $intersectGroups);
                     $this->logger->debug("page.voter", $debugIndo);
                 }
-
                 return $result;
+
+            default: {
+
+                return in_array($attribute, [
+                        self::INDEX,
+                        self::CREATE
+                    ]
+                );
+            }
         }
         return false;
     }

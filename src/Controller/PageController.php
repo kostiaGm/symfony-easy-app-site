@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
+use App\Controller\Traits\CacheTrait;
 use App\Controller\Traits\FileUploadTrait;
 use App\Controller\Traits\SeoSavingTrait;
 use App\Entity\Interfaces\NodeInterface;
@@ -70,11 +71,11 @@ class PageController extends AbstractController
      */
     public function index(Request $request): Response
     {
+        $this->denyAccessUnlessGranted(__FUNCTION__);
+
         $query = $this->pageRepository
             ->getAllQueryBuilder($this->activeSiteService->getId())
             ->getQuery();
-
-        //$this->cacheKeyService->getQuery($query);
 
         $pagination = $this->paginator->paginate(
             $this->pageRepository
@@ -97,6 +98,7 @@ class PageController extends AbstractController
     {
         $page = new Page();
 
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
         $form = $this->createForm(PageType::class, $page);
         $form->handleRequest($request);
 
@@ -130,12 +132,13 @@ class PageController extends AbstractController
             ->getByIdQueryBuilder($id)
             ->getQuery();
 
-        $this->cacheKeyService->getQuery($query);
         $page = $query->getOneOrNullResult();
 
         if (empty($page)) {
             throw new NotFoundHttpException("Page [ $id ] not found");
         }
+
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
 
         return $this->render('page/show.html.twig', [
             'page' => $page,
@@ -156,8 +159,8 @@ class PageController extends AbstractController
         $oidMenu = $page->getMenu();
 
         $this->denyAccessUnlessGranted(__FUNCTION__, $page);
-
         $form->handleRequest($request);
+
         if ($form->isSubmitted() && $form->isValid()) {
 
             try {
@@ -174,26 +177,6 @@ class PageController extends AbstractController
                 }
 
                 $this->pageRepository->add($page, true);
-
-                $cacheItemsKey = CacheKeyService::get(CacheKeyService::setKeys(
-                    $this->activeSiteService->getId(),
-                    $this->activeSiteService->getDomain(),
-                    $this->getUser()->getId(),
-                    null,
-                    'app_page_detail'
-                ),  'app_page_preview', '_page_id_'.$page->getId());
-
-                $cacheDetailKey = CacheKeyService::get(CacheKeyService::setKeys(
-                    $this->activeSiteService->getId(),
-                    $this->activeSiteService->getDomain(),
-                    $this->getUser()->getId(),
-                    null,
-                    'app_page_detail'
-                ));
-
-                $this->cache->delete($cacheItemsKey['key']);
-                $this->cache->delete($cacheDetailKey['key']);
-
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
                 return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
 
@@ -218,6 +201,8 @@ class PageController extends AbstractController
      */
     public function delete(Request $request, Page $page): Response
     {
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
+
         if ($this->isCsrfTokenValid('delete' . $page->getId(), $request->request->get('_token'))) {
             try {
                 $this->removeImage($page->getImage());
@@ -302,6 +287,8 @@ class PageController extends AbstractController
             throw new NotFoundHttpException("Page [ {$slug} ] not found");
         }
 
+        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
+
         return $this->render('page/detail.html.twig', [
             'page' => $page
         ]);
@@ -324,7 +311,14 @@ class PageController extends AbstractController
                 ->innerJoin($this->pageRepository->getAlias() . ".menu", $menuRepository->getAlias());
 
             $queryBuilder = $menuRepository
-                ->getParentsByItemQueryBuilder($page->getMenu(), $page->getPreviewDeep(), $queryBuilder, false);
+                ->getParentsByItemQueryBuilder(
+                    $page->getMenu(),
+                    $page->getPreviewDeep(),
+                    $queryBuilder,
+                    false
+                );
+
+            $queryBuilder->addSelect($menuRepository->getAlias());
 
             $queryBuilder
                 ->orderBy($this->pageRepository->getAlias() . ".id");

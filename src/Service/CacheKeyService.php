@@ -96,7 +96,7 @@ class CacheKeyService implements CacheKeyServiceInterface
 
         $result['key'] = $prefix . str_replace($keys, $values, self::KEYS[$key]['key']);
         //$result['key'] = md5($result['key']);
-        $result['key'] = $replacedKeys['USER_ID'].'##'.$replacedKeys['DOMAIN'] . '##' . $key . '##' . $result['key'];
+        $result['key'] = $replacedKeys['USER_ID'] . '##' . $replacedKeys['DOMAIN'] . '##' . $key . '##' . $result['key'];
         $result += ['key_' => $key];
 
         return $result;
@@ -106,62 +106,12 @@ class CacheKeyService implements CacheKeyServiceInterface
     public function getQuery(Query $query, ?string $key = null, ?string $prefix = null): void
     {
         $keys = self::get($this->replacedKeys, $key, $prefix);
-        $cacheItem = $this->cache->getItem('key_list_data');
-     //   $this->cache->deleteItem('key_list_data');
+        $query
+            ->useQueryCache(true)
+            ->setResultCacheId($keys['key']);
 
-
-        $userId = (int)$this->replacedKeys['USER_ID'];
-
-
-        if (!empty($keys['key'])) {
-
-            $data_ = [
-                $keys['key_'] => [
-                    $this->replacedKeys['SITE_ID'] => [
-                        $userId => [
-                            'db_keys' => [
-                                $keys['key']
-                            ]
-                        ]
-                    ]
-                ]
-            ];
-
-            $keysData = $cacheItem->get() ?? $data_;
-
-            if (!is_array($keysData)) {
-                $keysData = json_decode($keysData, true);
-            }
-
-            $keysData = $cacheItem->isHit() ? $keysData : $data_;
-
-            if (!isset($keysData[$keys['key_']]
-                    [$this->replacedKeys['SITE_ID']]
-                    [$userId]['db_keys'])
-                || !in_array($keys['key'], $keysData[$keys['key_']][$this->replacedKeys['SITE_ID']]
-                [$userId]['db_keys'])) {
-                $keysData[$keys['key_']]
-                [$this->replacedKeys['SITE_ID']]
-                [$userId]['db_keys'][] = $keys['key'];
-            }
-
-            $keysData[$keys['key_']]
-            [$this->replacedKeys['SITE_ID']]
-            [$userId]['sys'] = ['saved_time' => time()];
-
-
-
-            $query
-                ->useQueryCache(true)
-                ->setResultCacheId($keys['key']);
-
-            if (!empty($keys['expire'])) {
-                $query->setResultCacheLifetime($keys['expire']);
-                $cacheItem->expiresAfter($keys['expire']);
-            }
-
-            $cacheItem->set(json_encode($keysData));
-            $this->cache->save($cacheItem);
+        if (!empty($keys['expire'])) {
+            $query->setResultCacheLifetime($keys['expire']);
         }
     }
 

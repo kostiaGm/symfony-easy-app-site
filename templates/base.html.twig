@@ -25,7 +25,12 @@
     {# top menu #}
     {{ render(controller('App\\Controller\\MenuController::topMenu')) }}
 
+
     <div class="row align-items-start">
+        <div class="col col-lg-12 col-md-12 col-sm-12">
+            <h1>{% block h1 %}{% endblock %}</h1>
+            <hr>
+        </div>
         <div class="col col-lg-3 col-md-12 col-sm-12">
             {# left menu #}
             {% include 'menu/admin_menu.html.twig' with ({items: [
@@ -41,15 +46,11 @@
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
-
             {% if page.menu is defined and page.menu.id is defined %}
-               {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
+                {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
-
-            <h1>{% block h1 %}{% endblock %}</h1>
-            <hr>
-
             {% include 'elements/flush.html.twig' %}
+
             {% block body %}{% endblock %}
         </div>
     </div>

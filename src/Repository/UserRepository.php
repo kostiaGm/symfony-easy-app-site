@@ -39,7 +39,7 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
     {
         $alias = $this->getAlias();
 
-        $q = $this
+        $query = $this
             ->getQueryBuilder()
             ->where("{$alias}.username = :username OR {$alias}.email = :email")
             ->setParameter('username', $username)
@@ -48,8 +48,15 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
             ->addSelect('r')
             ->getQuery();
 
+
+        $query
+            ->useQueryCache(true)
+            ->setResultCacheId('activeUser')
+            ->setResultCacheLifetime(350)
+        ;
+
         try {
-            $user = $q->getSingleResult();
+            $user = $query->getSingleResult();
         } catch (NoResultException $e) {
             $message = sprintf(
                 'Unable to find an active admin AcmeUserBundle:User object identified by "%s".',
