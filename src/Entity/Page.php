@@ -10,6 +10,7 @@ use App\Entity\Interfaces\IsOnMainPageInterface;
 use App\Entity\Interfaces\OwnerInterface;
 use App\Entity\Interfaces\PermissionInterface;
 use App\Entity\Interfaces\PreviewBodyTextInterface;
+use App\Entity\Interfaces\SafeDeleteInterface;
 use App\Entity\Interfaces\SeoInterface;
 use App\Entity\Interfaces\SiteInterface;
 use App\Entity\Interfaces\StatusInterface;
@@ -21,6 +22,7 @@ use App\Entity\Traits\IsOnMainPageTrait;
 use App\Entity\Traits\OwnerTrait;
 use App\Entity\Traits\PermissionTrait;
 use App\Entity\Traits\PreviewBodyTextTrait;
+use App\Entity\Traits\SafeDeleteTrait;
 use App\Entity\Traits\SeoTrait;
 use App\Entity\Traits\SiteTrait;
 use App\Entity\Traits\StatusTrait;
@@ -49,7 +51,8 @@ class Page implements
     ImageInterface,
     OwnerInterface,
     PermissionInterface,
-    AuthorInterface
+    AuthorInterface,
+    SafeDeleteInterface
 {
     use ChangeDataDayTrait,
         PreviewBodyTextTrait,
@@ -60,7 +63,8 @@ class Page implements
         ImageTrait,
         OwnerTrait,
         PermissionTrait,
-        AuthorTrait
+        AuthorTrait,
+        SafeDeleteTrait
         ;
     /**
      * @ORM\Id

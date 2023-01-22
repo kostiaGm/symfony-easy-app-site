@@ -2,6 +2,7 @@
 
 namespace App\Repository\Traits;
 
+use App\Entity\Page;
 use Doctrine\ORM\QueryBuilder;
 
 trait GetQueryBuilderRepositoryTrait
@@ -32,13 +33,40 @@ trait GetQueryBuilderRepositoryTrait
         return $queryBuilder;
     }
 
-    public function getDataLength(int $siteId): int
+    public function getDataLengthQueryBuilder(int $siteId): QueryBuilder
     {
         $alias = $this->getAlias();
         return $this
             ->getQueryBuilderWithSiteId($siteId)
-            ->select("COUNT({$alias})")
+            ->select("COUNT({$alias})");
+    }
+
+    public function getDataLength(int $siteId): int
+    {
+        return $this
+            ->getDataLengthQueryBuilder($siteId)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    public function getDataLengthInBin(int $siteId, int $status = Page::STATUS_DELETED): int
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getDataLengthQueryBuilder($siteId)
+            ->andWhere("{$alias}.status=:status")
+            ->setParameter("status", $status)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function getByIdArray(array $ids): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        return $this
+            ->getQueryBuilder()
+            ->andWhere("{$alias}.id IN (:id)")
+            ->setParameter('id', $ids)
+            ;
     }
 }

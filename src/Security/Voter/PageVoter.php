@@ -5,11 +5,10 @@ namespace App\Security\Voter;
 use App\Entity\Interfaces\PermissionInterface;
 use App\Entity\Page;
 use App\Repository\Interfaces\UserPermissionInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
-use Symfony\Component\Security\Core\User\UserInterface;
+
 
 class PageVoter extends Voter
 {
@@ -20,7 +19,7 @@ class PageVoter extends Voter
     protected const EDIT = 'edit';
     protected const DETAIL = 'detail';
     protected const DELETE = 'delete';
-    protected const CREATE = 'create';
+    protected const NEW = 'new';
 
     protected const ATTRIBUTES = [
         self::INDEX,
@@ -28,7 +27,7 @@ class PageVoter extends Voter
         self::EDIT,
         self::DETAIL,
         self::DELETE,
-        self::CREATE,
+        self::NEW,
     ];
 
     protected const VIEWS = [
@@ -49,12 +48,12 @@ class PageVoter extends Voter
     protected function supports(string $attribute, $subject): bool
     {
         if (!in_array($attribute, self::ATTRIBUTES)) {
-            $this->logger->debug("page.voter: attribute [$attribute] not found");
+            $this->logger->error("page.voter: attribute [$attribute] not found");
             return false;
         }
 
         if (!in_array($attribute, self::WITHOUT_ENTITY) && !$subject instanceof Page) {
-            $this->logger->debug("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
+            $this->logger->error("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
             return false;
         }
 
@@ -64,17 +63,17 @@ class PageVoter extends Voter
     protected function voteOnAttribute(string $attribute, $subject, TokenInterface $token): bool
     {
         if (empty($token)) {
-            $this->logger->debug("page.voter: user token is empty");
+            $this->logger->error("page.voter: user token is empty");
             return false;
         }
 
         if (($user = $token->getUser()) === null) {
-            $this->logger->debug("page.voter: user not found");
+            $this->logger->error("page.voter: user not found");
             return false;
         }
 
         if (!in_array($attribute, self::WITHOUT_ENTITY) && !$subject instanceof Page) {
-            $this->logger->debug("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
+            $this->logger->error("page.voter: subject isn't type [" . get_class(Page::class) . "] not found");
             return false;
         }
 
@@ -105,7 +104,7 @@ class PageVoter extends Voter
             case PermissionInterface::AUTHOR_ONLY_READING_ALLOWED:
 
                 if (!$isAuthorTheSameAsActiveUser) {
-                    $this->logger->debug("page.voter", $debugIndo);
+                    $this->logger->error("page.voter", $debugIndo);
                 }
                 return $isAuthorTheSameAsActiveUser;
 
@@ -114,7 +113,7 @@ class PageVoter extends Voter
                 $result = $isAuthorTheSameAsActiveUser || in_array($attribute, self::VIEWS);
                 if (!$result) {
                     $debugIndo["allowed actions"] = implode(',', self::VIEWS);
-                    $this->logger->debug("page.voter", $debugIndo);
+                    $this->logger->error("page.voter", $debugIndo);
                 }
                 return $result;
 
@@ -126,7 +125,7 @@ class PageVoter extends Voter
                 if (!$result) {
                     $debugIndo["allowed actions"] = implode(',', self::VIEWS);
                     $debugIndo["found common groups"] = implode(',', $intersectGroups);
-                    $this->logger->debug("page.voter", $debugIndo);
+                    $this->logger->error("page.voter", $debugIndo);
                 }
 
                 return $result;
@@ -140,7 +139,7 @@ class PageVoter extends Voter
                 if (!$result) {
                     $debugIndo["allowed actions"] = implode(',', self::ATTRIBUTES);
                     $debugIndo["found common groups"] = implode(',', $intersectGroups);
-                    $this->logger->debug("page.voter", $debugIndo);
+                    $this->logger->error("page.voter", $debugIndo);
                 }
                 return $result;
 
@@ -148,7 +147,7 @@ class PageVoter extends Voter
 
                 return in_array($attribute, [
                         self::INDEX,
-                        self::CREATE
+                        self::NEW
                     ]
                 );
             }

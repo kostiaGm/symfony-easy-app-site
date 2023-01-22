@@ -1,13 +1,12 @@
 <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
     <ol class="breadcrumb">
-
         {% if items is not empty %}
             {% for item in items %}
-
                 {% if loop.last or item.route is empty %}
                     <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
                 {% else %}
-                    <li class="breadcrumb-item"><a href="{{ path(item.route, {slug: item.url}) }}">{{ item.name }}</a></li>
+                    <li class="breadcrumb-item"><a
+                                href="{{ path(item.route, {slug: item.url}) }}">{{ item.name }}</a></li>
                 {% endif %}
 
             {% endfor %}

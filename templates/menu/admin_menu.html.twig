@@ -4,14 +4,17 @@
 <div class="card mb-2">
     <div class="card-header">
         <div class="row">
-            <h5>Admin Menu</h5>
+            <h5>{% trans %} Admin Menu {% endtrans %}</h5>
         </div>
 
     </div>
     <div class="card-body">
         <div class="list-group list-group-flush">
             {% for r, itm in items %}
-                <a class="list-group-item list-group-item-action {{ itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}" href="{{ path(itm.route) }}">{{ itm.title }}</a>
+                <a class="list-group-item list-group-item-action
+                    {{ adminMenuActiveRoute != 'app_page_main' and
+                itm.route|slice(0, 5) in adminMenuActiveRoute ? 'active' }}"
+                   href="{{ path(itm.route) }}">{{ itm.title }}</a>
             {% endfor %}
 
         </div>

@@ -1,0 +1,5 @@
+{% if status == constant('App\\Entity\\Interfaces\\StatusInterface::STATUS_ACTIVE') %}
+    {% trans %} Active {% endtrans %}
+{% elseif status == constant('App\\Entity\\Interfaces\\StatusInterface::STATUS_INACTIVE') %}
+    {% trans %} Inactive {% endtrans %}
+{% endif %}

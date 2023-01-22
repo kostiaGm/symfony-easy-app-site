@@ -1,22 +1,20 @@
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">Home</a>
+        <a class="navbar-brand" href="/">{% trans %} Home {% endtrans %}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
                 {% for item in items %}
                     {% include 'menu/menu_link.html.twig' with { linkClass: 'p-2 link-secondary' } %}
                 {% endfor %}
             </ul>
             <div class="d-flex" >
-
                 {% if app.getUser.username is defined %}
-                    Hello {{ app.getUser.username }}! / <a href="{{ path('app_logout') }}">Logout</a>
+                    {% trans %} Hello {% endtrans %}   {{ app.getUser.username }}! / <a href="{{ path('app_logout') }}"> {% trans %} Logout {% endtrans %}</a>
                 {% else %}
-                    <a href="{{ path('app_login') }}">Login</a> / <a href="{{ path('app_register') }}">Registration</a>
+                    <a href="{{ path('app_login') }}"> {% trans %} Login {% endtrans %} </a> / <a href="{{ path('app_register') }}">{% trans %} Registration {% endtrans %} </a>
                 {% endif %}
             </div>
         </div>

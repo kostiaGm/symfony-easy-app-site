@@ -23,6 +23,11 @@
         "build": "encore production --progress"
     },
     "dependencies": {
-        "@popperjs/core": "^2.11.6"
+        "@popperjs/core": "^2.11.6",
+        "bootstrap-daterange-picker": "^2.1.27",
+        "jquery": "^3.6.3",
+        "knockout": "^3.5.1",
+        "knockout-daterangepicker": "^0.0.9",
+        "moment": "^2.29.4"
     }
 }

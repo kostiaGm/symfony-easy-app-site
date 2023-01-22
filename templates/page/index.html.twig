@@ -1,68 +1,174 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Page index{% endblock %}
-{% block h1 %}Page index{% endblock %}
+{% block title %} {% trans %} Pages {% endtrans %} {% endblock %}
+{% block h1 %} {% trans %} Pages {% endtrans %} {% endblock %}
+
+{% block admin_header %}
+
+    <a href="{{ path('app_page_new') }}" class="btn btn-primary btn-lg float-end">
+        {% trans %} Create New {% endtrans %}</a>
+
+    {% if app.request.query.get('filter') %}
+        <a href="{{ path('app_page_index') }}" class="btn btn-light btn-lg">
+            {% trans %} Close Filters {% endtrans %}</a>
+
+    {% else %}
+        <a href="{{ path('app_page_index', {filter:'w'}) }}" class="btn btn-light btn-lg">
+            {% trans %} Filters {% endtrans %}</a>
+    {% endif %}
+{% endblock %}
+
+
+{% block filter_menu %}
+
+    {% if app.request.query.get('filter') %}
+        {{ form_start(form) }}
+        <div class="card mb-2">
+            <div class="card-header">
+                <div class="row"><h5>{% trans %} Filter {% endtrans %}</h5></div>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {{ form_widget(form) }}
+                </div>
+            </div>
+            <div class="row p-3">
+                <div class="col-6"><a href="{{ path(app.request.get('_route'), {filter: 'w'}) }}" class=" m-2">
+                        {% trans %} Clear {% endtrans %} </a></div>
+
+                <div class="col-6 text-end">
+                    <button class="btn btn-primary " type="submit">
+                        {% trans %} Filter out {% endtrans %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {{ form_end(form) }}
+    {% endif %}
+{% endblock %}
+
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} Pages {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
 
 {% block body %}
-
-
     <table class="table">
         <thead>
-            <tr>
-                <th>Id</th>
-                <th>Image</th>
-                <th>Name</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>Status</th>
-                <th>actions</th>
-            </tr>
+        <tr>
+            <th>{% include 'elements/checkbox_all.html.twig' %}</th>
+            <th>{{ knp_pagination_sortable(pagination, 'Id', 'p.id') }}</th>
+            <th>{% trans %} Image {% endtrans %}</th>
+            <th>{% trans %} Name {% endtrans %}</th>
+            <th>{% trans %} CreatedAt {% endtrans %}</th>
+            <th>{% trans %} UpdatedAt {% endtrans %}</th>
+            <th>{% trans %} Status {% endtrans %}</th>
+            <th>{% trans %} actions {% endtrans %}</th>
+        </tr>
         </thead>
         <tbody>
-        {% for page in pagination %}
+
+        <form
+   action="{{ app.request.query.get('show') != 'bin' ? path('app_page_bulk_delete') : path('app_page_bulk_restore')}}"
+            method="post">
+            {% for page in pagination %}
+                <tr>
+                    <td><input type="checkbox" class="checkbox-item" name="delete_item[]" value="{{ page.id }}"></td>
+                    <td>{{ page.id }}</td>
+
+                    <td>
+                        {% set url = '#' %}
+                        {% if page.image is not empty %}
+                            <a href="{{ url }}" title="{{ page.name }}">
+                                <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.small }}/{{ page.image }}"
+                                     width="{{ image.size.small.width }}"
+                                     height="{{ image.size.small.height }}"
+                                     align="left"
+                                     class="m-2"
+                                     alt="{{ page.name }}"
+
+                                >
+                            </a>
+                        {% endif %}
+                    <td>{{ page.name }}</td>
+                    </td>
+                    <td>{{ page.createdAt ? page.createdAt|date(activeSite.datetime_format) : '' }}</td>
+                    <td>{{ page.updatedAt ? page.updatedAt|date(activeSite.datetime_format) : '' }}</td>
+
+
+                    <td>
+                        {% include 'elements/status.html.twig' with {status: page.status} %}
+                    </td>
+                    <td>
+                        <a href="{{ path('app_page_show', {'id': page.id}) }}">
+                            {% trans %} show {% endtrans %} </a> /
+
+                        <a href="{{ path('app_page_edit', {'id': page.id}) }}">
+                            {% trans %} edit {% endtrans %} </a> /
+
+                        {% if app.request.query.get('show') != 'bin' %}
+                            <a href="{{ path('app_page_delete', {'id': page.id}) }}"
+                               onclick="if (!confirm('{% trans %} Do delete this page? {% endtrans %} ')) return false;">
+                                {% trans %} delete {% endtrans %} </a>
+
+                        {% else %}
+                            <a href="{{ path('app_page_restore', {'id': page.id}) }}">
+                                {% trans %} restore {% endtrans %}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+
+            {% else %}
+                <tr>
+                    <td colspan="9">
+                        {% include 'elements/data_is_empty.html.twig' %}
+                    </td>
+                </tr>
+            {% endfor %}
             <tr>
-                <td>{{ page.id }}</td>
+                <td colspan="7">
+                    {% if app.request.query.get('show') != 'bin' %}
+                    <button class="btn btn-danger"
+                            type="submit"
+                            onclick="if ($('.checkbox-item:checked').length == 0) {
+                                    alert('{% trans %} Select some element {% endtrans %}'); return false; } else {
+                                    if (!confirm('{% trans %} Do delete those pages? {% endtrans %} '))
+                                        return false;
+                                    }">
+                        {% trans %} delete {% endtrans %} </button>
 
-                <td>
-                    {% set url = '#' %}
-                    {% if page.image is not empty %}
-                        <a href="{{ url }}" title="{{ page.name }}" >
-                            <img src="{{ app.request.getSchemeAndHttpHost }}/{{ image.load_form_path.small }}/{{ page.image }}"
-                                 width="{{ image.size.small.width  }}"
-                                 height="{{ image.size.small.height  }}"
-                                 align="left"
-                                 class="m-2"
-                                 alt="{{ page.name }}"
+                    {% else %}
 
-                            >
-                        </a>
+                        <button class="btn btn-info"
+                                type="submit"
+                                onclick="if ($('.checkbox-item:checked').length == 0) {
+                                        alert('{% trans %} Select some element {% endtrans %}'); return false; }">
+                            {% trans %} restore {% endtrans %} </button>
+
                     {% endif %}
-                <td>{{ page.name }}</td>
+
                 </td>
-                <td>{{ page.createdAt ? page.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ page.updatedAt ? page.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-
-
-                <td>{{ page.status }}</td>
-                <td>
-                    <a href="{{ path('app_page_show', {'id': page.id}) }}">show</a>
-                    <a href="{{ path('app_page_edit', {'id': page.id}) }}">edit</a>
+                <td class=" text-end">
+                    {% if app.request.query.get('show') != 'bin' %}
+                    <a href="{{ path('app_page_index', {'show': 'bin'}) }}"
+                       class="btn btn-light">{% trans %} Bin {% endtrans %} ({{ binLength }})</a>
+                    {% else %}
+                        <a href="{{ path('app_page_index') }}"
+                           class="btn btn-light">{% trans %} Active {% endtrans %} ({{ binLength }})</a>
+                    {% endif %}
                 </td>
             </tr>
-
-        {% else %}
-            <tr>
-                <td colspan="9">no records found</td>
-            </tr>
-        {% endfor %}
+        </form>
         </tbody>
     </table>
 
     <div class="navigation">
         {{ knp_pagination_render(pagination) }}
     </div>
-
-    <a href="{{ path('app_page_new') }}">Create new</a>
-
 
 {% endblock %}

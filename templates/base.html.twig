@@ -1,4 +1,4 @@
-<!DOCTYPE html>{% set activeSite = site is defined and app.request.getHost in site|keys ? attribute(site, app.request.getHost)%}
+<!DOCTYPE html>{% set activeSite = site is defined and app.request.getHost in site|keys ? attribute(site, app.request.getHost) %}
 <html>
 <head>
     <meta charset="UTF-8">
@@ -14,9 +14,17 @@
         {{ encore_entry_link_tags('app') }}
     {% endblock %}
 
+    <script type="text/javascript">
+        const conf = {
+            datetime_format: '{{ activeSite.datetime_format_js is defined ? activeSite.datetime_format_js : 'YYYY-MM-DD HH:MM' }}'
+        };
+    </script>
+
     {% block javascripts %}
         {{ encore_entry_script_tags('app') }}
     {% endblock %}
+
+
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -27,12 +35,17 @@
 
 
     <div class="row align-items-start">
-        <div class="col col-lg-12 col-md-12 col-sm-12">
+        <div class="col col-lg-9 col-md-9 col-sm-12">
             <h1>{% block h1 %}{% endblock %}</h1>
-            <hr>
         </div>
-        <div class="col col-lg-3 col-md-12 col-sm-12">
+        <div class="col col-lg-3 col-md-3 col-sm-12">
+            {% block admin_header %}{% endblock %}
+        </div>
+        <div class="col col-lg-3 col-md-12 col-sm-12 mt-4">
+
             {# left menu #}
+            {% block filter_menu %}{% endblock %}
+
             {% include 'menu/admin_menu.html.twig' with ({items: [
                 {'route' : 'app_page_index', 'title': 'Page'},
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
@@ -46,9 +59,11 @@
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
+            {% block breadcrumb %}
             {% if page.menu is defined and page.menu.id is defined %}
                 {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
+            {% endblock %}
             {% include 'elements/flush.html.twig' %}
 
             {% block body %}{% endblock %}
@@ -56,7 +71,7 @@
     </div>
 
     <div class="wrapper flex-grow-1">
-        {% if page.preview is defined and page.preview is not empty  %}
+        {% if page.preview is defined and page.preview is not empty %}
             <hr>
             {{ page.preview }}
         {% endif %}
@@ -65,9 +80,6 @@
         <hr>
         {{ render(controller('App\\Controller\\MenuController::bottomMenu')) }}
     </footer>
-
-
 </div>
-
 </body>
 </html>

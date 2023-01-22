@@ -38,8 +38,20 @@ class ActiveSiteService implements ActiveSiteServiceInterface
     /**
      * @return string
      */
-    public function getRoute(): string
+    public function getRoute(bool $isParent = false): string
     {
-        return $this->request->getCurrentRequest()->get('_route');
+        if ($isParent) {
+            return $this->request->getParentRequest() ? $this->request->getParentRequest()->get('_route') : '';
+        }
+        return $this->request->getCurrentRequest()->get('_route') ?? '';
+    }
+
+    /**
+     * @return array
+     */
+    public function getFilters(): array
+    {
+        return $this->get()['filters'] ?? [];
     }
 }
+

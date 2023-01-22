@@ -1,17 +1,17 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Group index{% endblock %}
+{% block title %}{% trans %} Group index {% endtrans %}{% endblock %}
+{% block h1 %}{% trans %} Group index {% endtrans %}{% endblock %}
 
 {% block body %}
-    <h1>Group index</h1>
 
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Role</th>
-                <th>actions</th>
+                <th>{% trans %} Id {% endtrans %}</th>
+                <th>{% trans %} Name {% endtrans %}</th>
+                <th>{% trans %} Role {% endtrans %}</th>
+                <th>{% trans %} actions {% endtrans %}</th>
             </tr>
         </thead>
         <tbody>
@@ -27,11 +27,11 @@
             </tr>
         {% else %}
             <tr>
-                <td colspan="4">no records found</td>
+                <td colspan="4">{% trans %} no records found {% endtrans %} </td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
 
-    <a href="{{ path('app_group_new') }}">Create new</a>
+    <a href="{{ path('app_group_new') }}">{% trans %} Create new {% endtrans %} </a>
 {% endblock %}

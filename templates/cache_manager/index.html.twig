@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}CacheManagerController!{% endblock %}
-{% block h1 %}CacheManagerController!{% endblock %}
+{% block title %} {% trans %} CacheManager {% endtrans %} {% endblock %}
+{% block h1 %} {% trans %} CacheManager {% endtrans %} {% endblock %}
 
 {% block body %}
     {% set time = date().timestamp %}
@@ -19,12 +19,11 @@
                     {% if item is not empty %}
                          {% for userId, item_ in item %}
                             {% for item__ in item_.db_keys %}
-                                <p> <strong>User: </strong>{{ users[userId] is defined ? users[userId].username : ' is not autorizated' }} </p>
-                              {#  <p><strong>Saved key: </strong> {{ item__ }}</p>#}
-                               <p><strong>Live time: </strong>
+                                <p> <strong>{% trans %} User {% endtrans %}: </strong>{{ users[userId] is defined ? users[userId].username : ' is not autorizated' }} </p>
+                               <p><strong>{% trans %} Live time {% endtrans %}: </strong>
                                     {{ item_.sys.expire }}</p>
                                 <hr>
-                                <p><a href="{{ path('app_cache_manager_clear', {realKey:item__}) }}"class="btn btn-primary">Clear</a></p>
+                                <p><a href="{{ path('app_cache_manager_clear', {realKey:item__}) }}"class="btn btn-primary">{% trans %} Clear {% endtrans %}</a></p>
 
                             {% endfor %}
                         {% endfor %}

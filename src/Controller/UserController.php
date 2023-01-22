@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\UserFilter;
 use App\Form\UserType;
+use App\Lib\FilterManager;
 use App\Repository\UserRepository;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -45,10 +47,19 @@ class UserController extends AbstractController
     public function index(Request $request): Response
     {
         $limit = $this->activeSiteService->get()['max_preview_pages'] ?? 5;
-        $query = $this->userRepository
-            ->getQueryBuilderWithSiteId($this->activeSiteService->getId())
-            ->getQuery()
-        ;
+        $queryBuilder = $this->userRepository->getQueryBuilderWithSiteId($this->activeSiteService->getId());
+
+        $userFilter = new UserFilter();
+        $filterManager = new FilterManager(
+            $userFilter,
+            $queryBuilder
+        );
+
+        $this->createFormBuilder();
+
+        $filterData = $filterManager->getFilterItems();
+
+        $query = $queryBuilder->getQuery();
 
         $pagination = $this->paginator->paginate(
             $query,

@@ -5,7 +5,10 @@ namespace App\Repository;
 use App\Entity\Interfaces\IsJoinMenuInterface;
 use App\Entity\Menu;
 use App\Entity\Page;
+use App\Entity\PageFilter;
 use App\Repository\Interfaces\UserPermissionInterface;
+use App\Repository\Traits\FilterRepositoryInterface;
+use App\Repository\Traits\GetQueryBuilderRepositoryInterface;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
 use App\Repository\Traits\UserPermissionTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -21,7 +24,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * @method Page[]    findAll()
  * @method Page[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class PageRepository extends ServiceEntityRepository
+class PageRepository extends ServiceEntityRepository implements GetQueryBuilderRepositoryInterface
 {
     use GetQueryBuilderRepositoryTrait, UserPermissionTrait;
 
@@ -49,11 +52,13 @@ class PageRepository extends ServiceEntityRepository
         }
     }
 
-    public function getAllQueryBuilder(int $siteId): QueryBuilder
+    public function getAllQueryBuilder(int $siteId, int $status = Page::STATUS_ACTIVE): QueryBuilder
     {
         $alias = $this->getAlias();
         $queryBuilder = $this
             ->getQueryBuilderWithSiteId($siteId)
+            ->andWhere("{$alias}.status=:status")
+            ->setParameter("status", $status)
             ->leftJoin("{$alias}.menu", 'm')
             ->addSelect('m')
             ;
@@ -94,4 +99,3 @@ class PageRepository extends ServiceEntityRepository
         ;
     }
 }
-
