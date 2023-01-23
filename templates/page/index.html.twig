@@ -105,19 +105,17 @@
                         {% include 'elements/status.html.twig' with {status: page.status} %}
                     </td>
                     <td>
-                        <a href="{{ path('app_page_show', {'id': page.id}) }}">
-                            {% trans %} show {% endtrans %} </a> /
-
-                        <a href="{{ path('app_page_edit', {'id': page.id}) }}">
-                            {% trans %} edit {% endtrans %} </a> /
-
+                        <a class="btn btn-light" href="{{ path('app_page_show', {'id': page.id}) }}">
+                            {% trans %} show {% endtrans %} </a>
+                        <a  class="btn btn-light" href="{{ path('app_page_edit', {'id': page.id}) }}">
+                            {% trans %} edit {% endtrans %} </a>
                         {% if app.request.query.get('show') != 'bin' %}
-                            <a href="{{ path('app_page_delete', {'id': page.id}) }}"
+                            <a  class="btn btn-danger" href="{{ path('app_page_delete', {'id': page.id}) }}"
                                onclick="if (!confirm('{% trans %} Do delete this page? {% endtrans %} ')) return false;">
                                 {% trans %} delete {% endtrans %} </a>
 
                         {% else %}
-                            <a href="{{ path('app_page_restore', {'id': page.id}) }}">
+                            <a  class="btn btn-light" href="{{ path('app_page_restore', {'id': page.id}) }}">
                                 {% trans %} restore {% endtrans %}</a>
                         {% endif %}
                     </td>

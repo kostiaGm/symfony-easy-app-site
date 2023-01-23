@@ -304,8 +304,6 @@ class PageController extends AbstractController
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
     }
 
-
-
     /* ******************************** End Admin ******************************************** */
 
     /* -------------------------------- Front ------------------------------------------------- */
