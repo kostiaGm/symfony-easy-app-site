@@ -1,11 +1,20 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}New Role{% endblock %}
+{% block h1 %}New Role{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_role_index') }}">
+                    {% trans %} Roles {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} New Role {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 
 {% block body %}
-    <h1>Create new Role</h1>
-
     {{ include('role/_form.html.twig') }}
-
-    <a href="{{ path('app_role_index') }}">back to list</a>
 {% endblock %}

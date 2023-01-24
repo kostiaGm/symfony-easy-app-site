@@ -1,9 +1,18 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Edit User{% endblock %}
+{% block h1 %}Edit User{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% trans %} Edit user {% endtrans %} {{ user.userIdentifier }} </li>
+        </ol>
+    </nav>
+{% endblock %}
 
 {% block body %}
-    <h1>Edit User</h1>
-
     {{ include('user/_form.html.twig', {'button_label': 'Update'}) }}
 {% endblock %}

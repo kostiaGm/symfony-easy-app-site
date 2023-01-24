@@ -3,6 +3,22 @@
 {% block title %}User index{% endblock %}
 {% block h1 %}User index{% endblock %}
 
+{% block admin_header %}
+    <a href="{{ path('app_user_new') }}" class="btn btn-primary btn-lg float-end">
+        {% trans %} Create New {% endtrans %}</a>
+{% endblock %}
+
+
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} Users {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 {% block body %}
 
     <div class="navigation">
@@ -12,35 +28,60 @@
     <table class="table">
         <thead>
             <tr>
+                <th>{% include 'elements/checkbox_all.html.twig' %}</th>
                 <th>Id</th>
-                <th>Username</th>
-                <th>Roles</th>
-                <th>Email</th>
-                <th>actions</th>
+                <th>{% trans %} Username {% endtrans %}</th>
+                <th>{% trans %} Roles {% endtrans %}</th>
+                <th>{% trans %} Email {% endtrans %}</th>
+                <th class="text-end">{% trans %} actions {% endtrans %}</th>
             </tr>
         </thead>
-        <tbody>
+       <tbody>
+        <form method="post"
+                action="{{ app.request.query.get('show') != 'bin' ?
+                path('app_user_bulk_delete') :
+                path('app_user_bulk_restore')}}">
+
         {% for user in pagination %}
             <tr>
+                <td><input type="checkbox" class="checkbox-item" name="delete_item[]" value="{{ user.id }}"></td>
                 <td>{{ user.id }}</td>
                 <td>{{ user.username }}</td>
                 <td>{{ user.roles ? user.roles|json_encode : '' }}</td>
                 <td>{{ user.email }}</td>
-                <td>
-                    <a href="{{ path('app_user_show', {'id': user.id}) }}">show</a>
-                    <a href="{{ path('app_user_edit', {'id': user.id}) }}">edit</a>
+                <td class="text-end">
+                    {% include 'elements/action_item_buttons.html.twig' with {
+                        show_path: path('app_user_show', {'id': user.id}),
+                        edit_path: path('app_user_edit', {'id': user.id}),
+                        delete_path: path('app_user_delete', {'id': user.id}),
+                        restore_path: path('app_user_delete', {'id': user.id})
+
+                    } %}
+
                 </td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="6">no records found</td>
+                <td colspan="6"> {% include 'elements/data_is_empty.html.twig' %}  </td>
             </tr>
         {% endfor %}
+            <tr>
+                <td colspan="5">
+                    {% include 'elements/bulk_delete_restore_buttons.html.twig' %}
+                </td>
+                <td class="text-end">
+                    {% include 'elements/bin_button.html.twig' with {
+                        show_bin_path: path('app_user_index', {'show': 'bin'}),
+                        show_active_path: path('app_user_index'),
+                        binLength: binLength
+                    } %}
+                </td>
+            </tr>
+        </form>
         </tbody>
     </table>
     <div class="navigation">
         {{ knp_pagination_render(pagination) }}
     </div>
 
-    <a href="{{ path('app_user_new') }}">Create new</a>
 {% endblock %}

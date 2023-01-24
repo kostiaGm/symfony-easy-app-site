@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Role;
 use App\Repository\Traits\GetQueryBuilderRepositoryTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -41,5 +42,17 @@ class RoleRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function getAllQueryBuilder(int $siteId, int $status = Role::STATUS_ACTIVE): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        $queryBuilder = $this
+            ->getQueryBuilderWithSiteId($siteId)
+            ->andWhere("{$alias}.status=:status")
+            ->setParameter("status", $status)
+        ;
+
+        return $queryBuilder;
     }
 }

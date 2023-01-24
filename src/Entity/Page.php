@@ -52,7 +52,8 @@ class Page implements
     OwnerInterface,
     PermissionInterface,
     AuthorInterface,
-    SafeDeleteInterface
+    SafeDeleteInterface,
+    SeoInterface
 {
     use ChangeDataDayTrait,
         PreviewBodyTextTrait,
@@ -64,7 +65,8 @@ class Page implements
         OwnerTrait,
         PermissionTrait,
         AuthorTrait,
-        SafeDeleteTrait
+        SafeDeleteTrait,
+        SeoTrait
         ;
     /**
      * @ORM\Id
@@ -94,6 +96,7 @@ class Page implements
      * @ORM\Column(type="boolean")
      */
     private $isPreview;
+
 
     public function getId(): ?int
     {

@@ -2,33 +2,25 @@
 
 namespace App\Controller;
 
-use App\Controller\Traits\ActiveTrait;
 use App\Controller\Traits\BulkDeleteTrait;
 use App\Controller\Traits\BulkTrait;
 use App\Controller\Traits\CacheTrait;
 use App\Controller\Traits\FileUploadTrait;
-use App\Controller\Traits\FilterUrlTrait;
-use App\Controller\Traits\SeoSavingTrait;
+
 use App\Entity\Interfaces\NodeInterface;
 use App\Entity\Page;
 use App\Entity\PageFilter;
-use App\Entity\Seo;
 use App\EventSubscriberService\Interfaces\DBSMenuInterface;
 use App\Exceptions\NestedSetsException;
 use App\Exceptions\NestedSetsMoveUnderSelfException;
 use App\Exceptions\NestedSetsNodeNotFoundException;
-use App\Form\PageFilterType;
 use App\Form\PageType;
-use App\Form\SeoType;
 use App\Lib\FilterManager;
 use App\Repository\MenuRepository;
 use App\Repository\PageRepository;
 use App\Repository\repository;
-use App\Repository\SeoRepository;
-use App\Service\CacheKeyService;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
 use App\Service\Interfaces\CacheKeyServiceInterface;
-use Doctrine\Common\Collections\ArrayCollection;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,7 +35,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 
 class PageController extends AbstractController
 {
-    use FileUploadTrait, SeoSavingTrait, FilterUrlTrait;
+    use FileUploadTrait, BulkTrait;
 
     private PageRepository $repository;
     private SluggerInterface $slugger;
@@ -97,12 +89,11 @@ class PageController extends AbstractController
         $siteId = $this->activeSiteService->getId();
 
         $pageFilter = new PageFilter();
-
         $isShowBin = $request->query->get('show') == 'bin';
+
         $queryBuilder = $this
             ->repository
             ->getAllQueryBuilder($siteId, $isShowBin ? Page::STATUS_DELETED : Page::STATUS_ACTIVE);
-
 
         $filterManager = new FilterManager(
             $pageFilter,
@@ -154,7 +145,11 @@ class PageController extends AbstractController
                 $page->setImage($fileName);
                 $this->repository->add($page, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
-                return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
+
+                return $this->redirectToRoute((
+                $request->request->get('is_create_new') ? 'app_page_new' :'app_page_index'
+                ) , [], Response::HTTP_SEE_OTHER);
+
             } catch (\Throwable $e) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
                 $this->logger->error($e->getMessage());
@@ -165,29 +160,6 @@ class PageController extends AbstractController
         return $this->renderForm('page/new.html.twig', [
             'page' => $page,
             'form' => $form,
-        ]);
-    }
-
-    /**
-     * @Route("/admin/page/{id}", name="app_page_show", methods={"GET"})
-     */
-    public function show(int $id): Response
-    {
-        $query = $this
-            ->repository
-            ->getByIdQueryBuilder($id)
-            ->getQuery();
-
-        $page = $query->getOneOrNullResult();
-
-        if (empty($page)) {
-            throw new NotFoundHttpException("Page [ $id ] not found");
-        }
-
-        $this->denyAccessUnlessGranted(__FUNCTION__, $page);
-
-        return $this->render('page/show.html.twig', [
-            'page' => $page,
         ]);
     }
 
@@ -224,7 +196,14 @@ class PageController extends AbstractController
 
                 $this->repository->add($page, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
-                return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
+
+                if ($request->request->get('is_create_new')) {
+                    return $this->redirectToRoute('app_page_new', [], Response::HTTP_SEE_OTHER);
+                }
+
+                return $this->redirectToRoute((
+                    $request->request->get('is_create_new') ? 'app_page_new' :'app_page_index'
+                ) , [], Response::HTTP_SEE_OTHER);
 
             } catch (NestedSetsException|NestedSetsMoveUnderSelfException|NestedSetsNodeNotFoundException $e) {
                 $this->addFlash("error", $e->getMessage());
@@ -275,7 +254,6 @@ class PageController extends AbstractController
 
         return $this->redirectToRoute('app_page_index', [], Response::HTTP_SEE_OTHER);
     }
-
 
     /**
      * @Route("/admin/page/bulk-delete/", name="app_page_bulk_delete", methods={"POST"})
@@ -430,13 +408,6 @@ class PageController extends AbstractController
         return $this->render('page/preview.html.twig', [
             'pages' => $pages
         ]);
-    }
-
-    /* ******************************** End Front ******************************************** */
-
-    private static function getEntityClass(): ?string
-    {
-        return Page::class;
     }
 }
 

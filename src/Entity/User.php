@@ -2,8 +2,12 @@
 
 namespace App\Entity;
 
+use App\Entity\Interfaces\SafeDeleteInterface;
 use App\Entity\Interfaces\SiteInterface;
+use App\Entity\Interfaces\StatusInterface;
+use App\Entity\Traits\SafeDeleteTrait;
 use App\Entity\Traits\SiteTrait;
+use App\Entity\Traits\StatusTrait;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -16,9 +20,17 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @UniqueEntity(fields={"username"}, message="There is already an account with this username")
  */
-class User implements UserInterface, PasswordAuthenticatedUserInterface//, \Serializable
+class User implements
+    UserInterface,
+    PasswordAuthenticatedUserInterface,
+    StatusInterface,
+    SafeDeleteInterface
 {
-    use SiteTrait;
+    use
+        SiteTrait,
+        StatusTrait,
+        SafeDeleteTrait
+        ;
 
     /**
      * @ORM\Id
@@ -189,5 +201,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface//, \Seri
         $this->otherUserIdsWithMyGroups = $otherUserIdsWithMyGroups;
         return $this;
     }
-
 }

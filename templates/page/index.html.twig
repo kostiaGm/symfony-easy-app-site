@@ -68,7 +68,7 @@
             <th>{% trans %} CreatedAt {% endtrans %}</th>
             <th>{% trans %} UpdatedAt {% endtrans %}</th>
             <th>{% trans %} Status {% endtrans %}</th>
-            <th>{% trans %} actions {% endtrans %}</th>
+            <th class="text-end">{% trans %} actions {% endtrans %}</th>
         </tr>
         </thead>
         <tbody>
@@ -90,35 +90,27 @@
                                      height="{{ image.size.small.height }}"
                                      align="left"
                                      class="m-2"
-                                     alt="{{ page.name }}"
-
-                                >
+                                     alt="{{ page.name }}">
                             </a>
                         {% endif %}
-                    <td>{{ page.name }}</td>
                     </td>
+                    <td>{{ page.name }}</td>
+
                     <td>{{ page.createdAt ? page.createdAt|date(activeSite.datetime_format) : '' }}</td>
                     <td>{{ page.updatedAt ? page.updatedAt|date(activeSite.datetime_format) : '' }}</td>
+                    <td>{% include 'elements/status.html.twig' with {status: page.status} %}</td>
+                    <td class="text-end">{% include 'elements/action_item_buttons.html.twig' with {
+                            show_path: page.menu.path is defined and page.menu.path is not null ?
+                            path('app_page_detail', {'slug': page.menu.path}) : null,
 
+                            edit_path: path('app_page_edit', {'id': page.id}),
 
-                    <td>
-                        {% include 'elements/status.html.twig' with {status: page.status} %}
-                    </td>
-                    <td>
-                        <a class="btn btn-light" href="{{ path('app_page_show', {'id': page.id}) }}">
-                            {% trans %} show {% endtrans %} </a>
-                        <a  class="btn btn-light" href="{{ path('app_page_edit', {'id': page.id}) }}">
-                            {% trans %} edit {% endtrans %} </a>
-                        {% if app.request.query.get('show') != 'bin' %}
-                            <a  class="btn btn-danger" href="{{ path('app_page_delete', {'id': page.id}) }}"
-                               onclick="if (!confirm('{% trans %} Do delete this page? {% endtrans %} ')) return false;">
-                                {% trans %} delete {% endtrans %} </a>
+                            delete_path: app.request.query.get('show') != 'bin' ?
+                            path('app_page_delete', {'id': page.id}) : null,
 
-                        {% else %}
-                            <a  class="btn btn-light" href="{{ path('app_page_restore', {'id': page.id}) }}">
-                                {% trans %} restore {% endtrans %}</a>
-                        {% endif %}
-                    </td>
+                            restore_path: path('app_page_restore', {'id': page.id})
+
+                        } %}</td>
                 </tr>
 
             {% else %}
@@ -128,39 +120,20 @@
                     </td>
                 </tr>
             {% endfor %}
+
             <tr>
                 <td colspan="7">
-                    {% if app.request.query.get('show') != 'bin' %}
-                    <button class="btn btn-danger"
-                            type="submit"
-                            onclick="if ($('.checkbox-item:checked').length == 0) {
-                                    alert('{% trans %} Select some element {% endtrans %}'); return false; } else {
-                                    if (!confirm('{% trans %} Do delete those pages? {% endtrans %} '))
-                                        return false;
-                                    }">
-                        {% trans %} delete {% endtrans %} </button>
-
-                    {% else %}
-
-                        <button class="btn btn-info"
-                                type="submit"
-                                onclick="if ($('.checkbox-item:checked').length == 0) {
-                                        alert('{% trans %} Select some element {% endtrans %}'); return false; }">
-                            {% trans %} restore {% endtrans %} </button>
-
-                    {% endif %}
-
+                    {% include 'elements/bulk_delete_restore_buttons.html.twig' %}
                 </td>
-                <td class=" text-end">
-                    {% if app.request.query.get('show') != 'bin' %}
-                    <a href="{{ path('app_page_index', {'show': 'bin'}) }}"
-                       class="btn btn-light">{% trans %} Bin {% endtrans %} ({{ binLength }})</a>
-                    {% else %}
-                        <a href="{{ path('app_page_index') }}"
-                           class="btn btn-light">{% trans %} Active {% endtrans %} ({{ binLength }})</a>
-                    {% endif %}
+                <td class="text-end">
+                    {% include 'elements/bin_button.html.twig' with {
+                        show_bin_path: path('app_page_index', {'show': 'bin'}),
+                        show_active_path: path('app_page_index'),
+                        binLength: binLength
+                    } %}
                 </td>
             </tr>
+
         </form>
         </tbody>
     </table>

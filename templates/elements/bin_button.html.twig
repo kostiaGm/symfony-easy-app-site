@@ -1,0 +1,7 @@
+{% if app.request.query.get('show') != 'bin' %}
+    <a href="{{ show_bin_path }}"
+       class="btn btn-light">{% trans %} Bin {% endtrans %} ({{ binLength }})</a>
+{% else %}
+    <a href="{{ show_active_path }}"
+       class="btn btn-light">{% trans %} Active {% endtrans %} ({{ binLength }})</a>
+{% endif %}

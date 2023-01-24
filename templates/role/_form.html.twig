@@ -1,4 +1,5 @@
+{% set route =  role.id is null ? 'app_role_new' : 'app_role_edit' %}
 {{ form_start(form) }}
     {{ form_widget(form) }}
-    <button class="btn">{{ button_label|default('Save') }}</button>
+    {% include 'elements/action_buttons_form.html.twig' with {back_to_list_path: path('app_role_index')}%}
 {{ form_end(form) }}

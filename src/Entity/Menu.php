@@ -25,7 +25,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 /**
  * @ORM\Entity(repositoryClass=MenuRepository::class)
  * @UniqueEntity(
- *     fields={"name", "tree"},
+ *     fields={"url", "site_id", "tree"},
  *     errorPath="name"
  * )
  *

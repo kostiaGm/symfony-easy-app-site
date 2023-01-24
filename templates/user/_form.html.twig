@@ -1,12 +1,5 @@
+{% set route =  user.id is null ? 'app_user_new' : 'app_user_edit' %}
 {{ form_start(form) }}
     {{ form_widget(form) }}
-<div class="row">
-    <div class="col-md-8"><a href="{{ path('app_user_index') }}">back to list</a></div>
-
-    <div class="col-md-2 offset-md-2">
-
-        <button class="btn btn-primary">{{ button_label|default('Save') }}</button>
-    </div>
-</div>
-
+     {% include 'elements/action_buttons_form.html.twig' with {back_to_list_path: path('app_user_index')}%}
 {{ form_end(form) }}

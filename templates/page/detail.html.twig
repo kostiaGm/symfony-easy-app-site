@@ -1,7 +1,10 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ page.name is defined ? page.name }}{% endblock %}
-{% block h1 %}{{ page.name is defined ?  page.name }}{% endblock %}
+{% block title %} {{ page.seoTitle is defined ? page.seoTitle }} {% endblock %}
+{% block h1 %} {{ page.name is defined ?  page.name }} {% endblock %}
+{% block keywords %}{{ page.seoKeywords }}{% endblock %}
+{% block description %}{{ page.seoDescription }}{% endblock %}
+
 
 {% block body %}
 

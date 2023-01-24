@@ -1,11 +1,18 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}New User{% endblock %}
+{% block h1 %}New User{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} New user {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 
 {% block body %}
-    <h1>Create new User</h1>
-
     {{ include('user/_form.html.twig') }}
-
-    <a href="{{ path('app_user_index') }}">back to list</a>
 {% endblock %}

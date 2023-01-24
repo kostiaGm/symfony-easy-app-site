@@ -1,0 +1,16 @@
+{% if show_path is not null %}
+    <a class="btn btn-light" target="_blank" href="{{ show_path }}"> {% trans %} Show {% endtrans %} </a>
+{% else %}
+    <a class="btn btn-light disabled" href="#"> {% trans %} Show {% endtrans %} </a>
+{% endif %}
+
+<a class="btn btn-light" href="{{ edit_path }}"> {% trans %} Edit {% endtrans %} </a>
+
+{% if delete_path != null %}
+    <a class="btn btn-danger" href="{{ delete_path }}"
+        onclick="if (!confirm('{% trans %} Do delete this item? {% endtrans %} ')) return false;">
+        {% trans %} Delete {% endtrans %} </a>
+
+{% else %}
+    <a class="btn btn-light" href="{{ restore_path }}"> {% trans %} Restore {% endtrans %}</a>
+{% endif %}

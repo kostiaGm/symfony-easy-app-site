@@ -42,12 +42,13 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
         $query = $this
             ->getQueryBuilder()
             ->where("{$alias}.username = :username OR {$alias}.email = :email")
+            ->andWhere("{$alias}.status=:status")
+            ->setParameter('status', User::STATUS_ACTIVE)
             ->setParameter('username', $username)
             ->setParameter('email', $username)
             ->leftJoin("{$alias}.roles", 'r')
             ->addSelect('r')
             ->getQuery();
-
 
         $query
             ->useQueryCache(true)
@@ -114,5 +115,17 @@ class UserRepository extends ServiceEntityRepository implements UserLoaderInterf
         $result = $this->getEntityManager()->getConnection()->fetchAllNumeric($sql);
 
         $user->setOtherUserIdsWithMyGroups($result);
+    }
+
+    public function getAllQueryBuilder(int $siteId, int $status = User::STATUS_ACTIVE): QueryBuilder
+    {
+        $alias = $this->getAlias();
+        $queryBuilder = $this
+            ->getQueryBuilderWithSiteId($siteId)
+            ->andWhere("{$alias}.status=:status")
+            ->setParameter("status", $status)
+        ;
+
+        return $queryBuilder;
     }
 }

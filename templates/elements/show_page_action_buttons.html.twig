@@ -1,0 +1,8 @@
+<div class="row">
+    <div class="col-md-8 mt-4"><a href="{{ back_to_list_path }}">{% trans %} Back to list {% endtrans %} </a></div>
+    <div class="col-md-4 mt-4 text-end">
+    <a class="btn btn-danger" href="{{ delete_path }}"
+       onclick="if (!confirm('{% trans %} Do delete this item? {% endtrans %} ')) return false;">
+        {% trans %} Delete {% endtrans %} </a>
+    </div>
+</div>

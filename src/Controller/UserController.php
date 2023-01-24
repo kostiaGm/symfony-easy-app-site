@@ -2,10 +2,9 @@
 
 namespace App\Controller;
 
+use App\Controller\Traits\BulkTrait;
 use App\Entity\User;
-use App\Entity\UserFilter;
 use App\Form\UserType;
-use App\Lib\FilterManager;
 use App\Repository\UserRepository;
 use App\Service\Interfaces\ActiveSiteServiceInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -19,8 +18,10 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
 {
+    use BulkTrait;
+
     private PaginatorInterface $paginator;
-    private UserRepository $userRepository;
+    private UserRepository $repository;
 
     private ActiveSiteServiceInterface $activeSiteService;
     private LoggerInterface $logger;
@@ -29,14 +30,24 @@ class UserController extends AbstractController
     private const DELETE_MESSAGE = 'User deleted';
     private const ERROR_MESSAGE = "Error! User not saved";
 
+    private const ERROR_DELETE_MESSAGE = "Error! User not deleted";
+
+    private const RESTORE_MESSAGE = 'User came back';
+    private const RESTORE_ERROR_MESSAGE = 'Error! User not came back';
+
+    private const BULK_DELETE_MESSAGE = 'Users deleted';
+    private const BULK_DELETE_ERROR_MESSAGE = 'Error! Users not deleted';
+    private const BULK_RESTORE_MESSAGE = 'Users came back';
+    private const BULK_RESTORE_ERROR_MESSAGE = 'Error! Users not came back';
+
     public function __construct(
         PaginatorInterface $paginator,
-        UserRepository $userRepository,
+        UserRepository $repository,
         ActiveSiteServiceInterface $activeSiteService,
         LoggerInterface $logger
     ) {
         $this->paginator = $paginator;
-        $this->userRepository = $userRepository;
+        $this->repository = $repository;
         $this->activeSiteService = $activeSiteService;
         $this->logger = $logger;
     }
@@ -46,18 +57,15 @@ class UserController extends AbstractController
      */
     public function index(Request $request): Response
     {
-        $limit = $this->activeSiteService->get()['max_preview_pages'] ?? 5;
-        $queryBuilder = $this->userRepository->getQueryBuilderWithSiteId($this->activeSiteService->getId());
+        $isShowBin = $request->query->get('show') == 'bin';
 
-        $userFilter = new UserFilter();
-        $filterManager = new FilterManager(
-            $userFilter,
-            $queryBuilder
-        );
+        $limit = $this->activeSiteService->get()['max_preview_pages'] ?? 5;
+        $siteId = $this->activeSiteService->getId();
+        $queryBuilder = $this
+            ->repository
+            ->getAllQueryBuilder($siteId, $isShowBin ? User::STATUS_DELETED : User::STATUS_ACTIVE);
 
         $this->createFormBuilder();
-
-        $filterData = $filterManager->getFilterItems();
 
         $query = $queryBuilder->getQuery();
 
@@ -69,6 +77,9 @@ class UserController extends AbstractController
 
         return $this->render('user/index.html.twig', [
             'pagination' => $pagination,
+            'binLength' => $this
+                ->repository
+                ->getDataLengthInBin($siteId, $isShowBin ? User::STATUS_ACTIVE : User::STATUS_DELETED)
         ]);
     }
 
@@ -84,9 +95,13 @@ class UserController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
 
             try {
-                $this->userRepository->add($user, true);
+                $this->repository->add($user, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
-                return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);;
+
+                return $this->redirectToRoute((
+                    $request->request->get('is_create_new') ? 'app_user_new' :'app_user_index'
+                    ) , [], Response::HTTP_SEE_OTHER);
+
             } catch (\Throwable $exception) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
                 $this->logger->error($exception->getMessage());
@@ -115,7 +130,7 @@ class UserController extends AbstractController
     public function edit(
         Request $request,
         User $user,
-        UserRepository $userRepository,
+        UserRepository $repository,
         UserPasswordHasherInterface $userPasswordHasher
     ): Response {
         $form = $this->createForm(UserType::class, $user);
@@ -132,13 +147,13 @@ class UserController extends AbstractController
             foreach ($oldRoles as $role) {
                 if (!$user->getRolesCollection()->contains($role)) {
                     $role->removeUser($user);
-                    $userRepository->add($user);
+                    $repository->add($user);
                 }
             }
 
             foreach ($user->getRolesCollection() as $role) {
                 $role->addUser($user);
-                $userRepository->add($user);
+                $repository->add($user);
             }
 
             if ($user->getPassword() !== null ) {
@@ -152,11 +167,15 @@ class UserController extends AbstractController
                 $user->setPassword($oldPassword);
             }
 
-
             try {
-                $this->userRepository->add($user, true);
+                $this->repository->add($user, true);
                 $this->addFlash('success', self::SUCCESS_MESSAGE);
-                return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+
+                return $this->redirectToRoute((
+                $request->request->get('is_create_new') ? 'app_user_new' :'app_user_index'
+                ) , [], Response::HTTP_SEE_OTHER);
+
+
             } catch (\Throwable $exception) {
                 $this->addFlash("error", self::ERROR_MESSAGE);
                 $this->logger->error($exception->getMessage());
@@ -171,20 +190,64 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/admin/user/delete/{id}", name="app_user_delete", methods={"POST"})
+     * @Route("/admin/user/delete/{id}", name="app_user_delete", methods={"GET"})
      */
-    public function delete(Request $request, User $user, UserRepository $userRepository): Response
+    public function delete(User $user, repository $repository): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
-            try {
-                $userRepository->remove($user, true);
-                $this->addFlash('success', self::DELETE_MESSAGE);
-            } catch (\Throwable $exception) {
-                $this->addFlash("error", self::ERROR_MESSAGE);
-                $this->logger->error($exception->getMessage());
-            }
+        try {
+            $user->setStatus(User::STATUS_DELETED);
+            $this->repository->add($user, true);
+            $this->addFlash('success', self::RESTORE_MESSAGE);
+        } catch (\Throwable $exception) {
+            $this->logger->error($exception->getMessage());
+            $this->addFlash('error', self::RESTORE_ERROR_MESSAGE);
         }
 
         return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
     }
+
+    /**
+     * @Route("/admin/user/delete/{id}", name="app_user_restore", methods={"GET"})
+     */
+    public function restore(User $user, repository $repository): Response
+    {
+        try {
+            $user->setStatus(User::STATUS_ACTIVE);
+            $this->repository->add($user, true);
+            $this->addFlash('success', self::RESTORE_MESSAGE);
+        } catch (\Throwable $exception) {
+            $this->logger->error($exception->getMessage());
+            $this->addFlash('error', self::RESTORE_ERROR_MESSAGE);
+        }
+
+        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * @Route("/admin/user/bulk-delete/", name="app_user_bulk_delete", methods={"POST"})
+     */
+    public function bulkDelete(Request $request): Response
+    {
+        $this->bulkChange(
+            $request,
+            self::BULK_DELETE_MESSAGE,
+            self::BULK_DELETE_ERROR_MESSAGE
+        );
+        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * @Route("/admin/user/bulk-restore/", name="app_user_bulk_restore", methods={"POST"})
+     */
+    public function bulkRestore(Request $request): Response
+    {
+        $this->bulkChange(
+            $request,
+            self::BULK_RESTORE_MESSAGE,
+            self::BULK_RESTORE_ERROR_MESSAGE,
+            User::STATUS_ACTIVE
+        );
+        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+    }
+
 }

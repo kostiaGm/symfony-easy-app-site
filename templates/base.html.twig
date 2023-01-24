@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
-    {% if page.id is defined and page.id is not null %}
-        {{ render(controller('App\\Controller\\SeoController::detail', {entity: page, siteId: activeSite.id})) }}
-    {% endif %}
+
+    <meta charset="UTF-8">
+    <meta name="description" content="{% block description %}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{% endblock %}">
 
     <link rel="icon"
           href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
@@ -33,7 +34,6 @@
     {# top menu #}
     {{ render(controller('App\\Controller\\MenuController::topMenu')) }}
 
-
     <div class="row align-items-start">
         <div class="col col-lg-9 col-md-9 col-sm-12">
             <h1>{% block h1 %}{% endblock %}</h1>
@@ -49,10 +49,9 @@
             {% include 'menu/admin_menu.html.twig' with ({items: [
                 {'route' : 'app_page_index', 'title': 'Page'},
                 {'route' : 'menu_admin_index', 'title': 'Menu'},
-                {'route' : 'app_seo_index', 'title': 'Seo'},
                 {'route' : 'app_user_index', 'title': 'Users'},
                 {'route' : 'app_cache_manager', 'title': 'Cache Manager'},
-                {'route' : 'app_role_new', 'title': 'Roles'},
+                {'route' : 'app_role_index', 'title': 'Roles'},
             ]}) %}
 
             {{ render(controller('App\\Controller\\MenuController::leftMenu', {request: app.request})) }}

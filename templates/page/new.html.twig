@@ -3,8 +3,17 @@
 {% block title %}New Page{% endblock %}
 {% block h1 %}New Page{% endblock %}
 
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_page_index') }}">
+                    {% trans %} Pages {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} New page {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 {% block body %}
-
-
     {{ include('page/_form.html.twig') }}
 {% endblock %}

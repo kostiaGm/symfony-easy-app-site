@@ -1,10 +1,21 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Edit Page{% endblock %}
+{% block h1 %}Edit Page{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_page_index') }}">
+                    {% trans %} Pages {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% trans %} Edit page {% endtrans %} {{ page.name }} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 
 {% block body %}
-    <h1>Edit Page</h1>
-
     {{ include('page/_form.html.twig', {'button_label': 'Update'}) }}
-
 {% endblock %}

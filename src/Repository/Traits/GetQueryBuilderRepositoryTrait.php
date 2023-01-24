@@ -2,6 +2,7 @@
 
 namespace App\Repository\Traits;
 
+use App\Entity\Interfaces\SafeDeleteInterface;
 use App\Entity\Page;
 use Doctrine\ORM\QueryBuilder;
 
@@ -49,7 +50,7 @@ trait GetQueryBuilderRepositoryTrait
             ->getSingleScalarResult();
     }
 
-    public function getDataLengthInBin(int $siteId, int $status = Page::STATUS_DELETED): int
+    public function getDataLengthInBin(int $siteId, int $status = SafeDeleteInterface::STATUS_DELETED): int
     {
         $alias = $this->getAlias();
         return $this

@@ -1,39 +1,84 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Role index{% endblock %}
+{% block h1 %}Role index{% endblock %}
+
+{% block admin_header %}
+    <a href="{{ path('app_role_new') }}" class="btn btn-primary btn-lg float-end">
+        {% trans %} Create New {% endtrans %}</a>
+{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} Roles {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
 
 {% block body %}
-    <h1>Role index</h1>
+
+    <div class="navigation">
+        {{ knp_pagination_render(pagination) }}
+    </div>
 
     <table class="table">
         <thead>
             <tr>
+                <th>{% include 'elements/checkbox_all.html.twig' %}</th>
                 <th>Id</th>
-                <th>Name</th>
-                <th>Role</th>
-                <th>SiteId</th>
-                <th>actions</th>
+                <th>{% trans %} Name {% endtrans %}</th>
+                <th>{% trans %} Role {% endtrans %}</th>
+                <th>{% trans %} SiteId {% endtrans %}</th>
+                <th>{% trans %} actions {% endtrans %}</th>
             </tr>
         </thead>
         <tbody>
-        {% for role in roles %}
+        <form method="post"
+              action="{{ app.request.query.get('show') != 'bin' ?
+              path('app_role_bulk_delete') :
+              path('app_role_bulk_restore')}}">
+
+        {% for role in pagination %}
             <tr>
+                <td><input type="checkbox" class="checkbox-item" name="delete_item[]" value="{{ role.id }}"></td>
                 <td>{{ role.id }}</td>
                 <td>{{ role.name }}</td>
                 <td>{{ role.role }}</td>
                 <td>{{ role.siteId }}</td>
-                <td>
-                    <a href="{{ path('app_role_show', {'id': role.id}) }}">show</a>
-                    <a href="{{ path('app_role_edit', {'id': role.id}) }}">edit</a>
+
+                <td class="text-end">
+                    {% include 'elements/action_item_buttons.html.twig' with {
+                        show_path: path('app_role_show', {'id': role.id}),
+                        edit_path: path('app_role_edit', {'id': role.id}),
+                        delete_path: path('app_role_delete', {'id': role.id}),
+                        restore_path: path('app_role_restore', {'id': role.id})
+
+                    } %}
                 </td>
             </tr>
+
         {% else %}
             <tr>
-                <td colspan="5">no records found</td>
+                <td colspan="5"> {% include 'elements/data_is_empty.html.twig' %} </td>
             </tr>
         {% endfor %}
+            <tr>
+                <td colspan="5">
+                    {% include 'elements/bulk_delete_restore_buttons.html.twig' %}
+                </td>
+                <td class="text-end">
+                    {% include 'elements/bin_button.html.twig' with {
+                        show_bin_path: path('app_role_index', {'show': 'bin'}),
+                        show_active_path: path('app_role_index'),
+                        binLength: binLength
+                    } %}
+                </td>
+            </tr>
+
+        </form>
         </tbody>
     </table>
 
-    <a href="{{ path('app_role_new') }}">Create new</a>
 {% endblock %}

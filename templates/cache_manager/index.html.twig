@@ -3,6 +3,15 @@
 {% block title %} {% trans %} CacheManager {% endtrans %} {% endblock %}
 {% block h1 %} {% trans %} CacheManager {% endtrans %} {% endblock %}
 
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} Cache Manager {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 {% block body %}
     {% set time = date().timestamp %}
 

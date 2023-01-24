@@ -4,6 +4,17 @@
 
 {% block h1 %}Menu Admin{% endblock %}
 
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item"><a href="menu_admin_index">{% trans %} Menu items {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% trans %} Edit menu {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
 {% block body %}
 
     <div class="row">

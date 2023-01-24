@@ -1,10 +1,21 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Role{% endblock %}
+{% block h1 %}Role{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_role_index') }}">
+                    {% trans %} Roles {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% trans %} Role {% endtrans %} {{ role.name }} </li>
+        </ol>
+    </nav>
+{% endblock %}
 
 {% block body %}
-    <h1>Role</h1>
-
     <table class="table">
         <tbody>
             <tr>
@@ -26,9 +37,8 @@
         </tbody>
     </table>
 
-    <a href="{{ path('app_role_index') }}">back to list</a>
-
-    <a href="{{ path('app_role_edit', {'id': role.id}) }}">edit</a>
-
-    {{ include('role/_delete_form.html.twig') }}
+    {{ include('elements/show_page_action_buttons.html.twig', {
+        back_to_list_path: path('app_role_index'),
+        delete_path: path('app_role_delete', {id: role.id})
+    }) }}
 {% endblock %}

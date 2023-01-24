@@ -1,0 +1,21 @@
+
+        {% if app.request.query.get('show') != 'bin' %}
+            <button class="btn btn-danger"
+                    type="submit"
+                    onclick="if ($('.checkbox-item:checked').length == 0) {
+                            alert('{% trans %} Select some element {% endtrans %}'); return false; } else {
+                            if (!confirm('{% trans %} Do delete those pages? {% endtrans %} '))
+                            return false;
+                            }">
+                {% trans %} delete {% endtrans %} </button>
+
+        {% else %}
+
+            <button class="btn btn-info"
+                    type="submit"
+                    onclick="if ($('.checkbox-item:checked').length == 0) {
+                            alert('{% trans %} Select some element {% endtrans %}'); return false; }">
+                {% trans %} restore {% endtrans %} </button>
+
+        {% endif %}
+
