@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Controller\Traits\ActiveTrait;
+use App\Entity\Interfaces\StatusInterface;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Security\AppCustomAuthenticator;
@@ -43,6 +44,8 @@ class RegistrationController extends AbstractController
                     $form->get('plainPassword')->getData()
                 )
             );
+
+            $user->setStatus(StatusInterface::STATUS_ACTIVE);
 
             $entityManager->persist($user);
             $entityManager->flush();
