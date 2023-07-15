@@ -1,0 +1,14 @@
+<ul id="settings">
+    {% for settings in form.settings %}
+        <li>{{ form_row(settings.name) }}</li>
+    {% endfor %}
+</ul>
+
+
+
+<button type="button"
+        data-index="0"
+        class="btn btn-light add_item_link"
+        data-ul-id="settings"
+        data-collection-holder-class="gallery_settings">Add a setting</button>
+<button class="btn">{{ button_label|default('Save') }}</button>

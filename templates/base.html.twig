@@ -35,12 +35,7 @@
     {{ render(controller('App\\Controller\\MenuController::topMenu')) }}
 
     <div class="row align-items-start">
-        <div class="col col-lg-9 col-md-9 col-sm-12">
-            <h1>{% block h1 %}{% endblock %}</h1>
-        </div>
-        <div class="col col-lg-3 col-md-3 col-sm-12">
-            {% block admin_header %}{% endblock %}
-        </div>
+
         <div class="col col-lg-3 col-md-12 col-sm-12 mt-4">
 
             {# left menu #}
@@ -58,12 +53,28 @@
 
         </div>
         <div class="col col-lg-9 col-md-12 col-sm-12">
+
+            <div class="row">
+                <div class="col col-lg-9 col-md-9 col-sm-12">
+                    <h1>{% block h1 %}{% endblock %}</h1>
+                </div>
+                <div class="col col-lg-3 col-md-3 col-sm-12 text-end pt-2">
+
+                   {% block admin_header %}{% endblock %}
+                </div>
+
+            </div>
+
+
+
             {% block breadcrumb %}
             {% if page.menu is defined and page.menu.id is defined %}
                 {{ render(controller('App\\Controller\\MenuController::breadcrumbs', {node: page.menu})) }}
             {% endif %}
             {% endblock %}
             {% include 'elements/flush.html.twig' %}
+
+
 
             {% block body %}{% endblock %}
         </div>

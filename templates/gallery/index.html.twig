@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %} {% trans %} Gallery {% endtrans %} {% endblock %}
+{% block h1 %} {% trans %} Gallery {% endtrans %} {% endblock %}
+
+ {% block admin_header %}
+     <a href="{{ path('app_setting_gallery') }}" class="btn btn-light ">Settings</a>
+
+ {% endblock %}
+
+{% block body %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for gallery in galleries %}
+            <tr>
+                <td>{{ gallery.id }}</td>
+                <td>
+                    <a href="{{ path('app_gallery_show', {'id': gallery.id}) }}">show</a>
+                    <a href="{{ path('app_gallery_edit', {'id': gallery.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="2">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_gallery_new') }}">Create new</a>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %} {% trans %} Setting gallery {% endtrans %} {% endblock %}
+{% block h1 %} {% trans %} Setting gallery  {% endtrans %} {% endblock %}
+
+{% block body %}
+    {{ form_start(form) }}
+    {{ form_widget(form) }}
+
+    {% include 'elements/action_buttons_form.html.twig' with {back_to_list_path: path('app_gallery_index')}%}
+    {{ form_end(form) }}
+{% endblock %}

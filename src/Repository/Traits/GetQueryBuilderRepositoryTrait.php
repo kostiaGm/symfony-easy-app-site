@@ -3,7 +3,6 @@
 namespace App\Repository\Traits;
 
 use App\Entity\Interfaces\SafeDeleteInterface;
-use App\Entity\Page;
 use Doctrine\ORM\QueryBuilder;
 
 trait GetQueryBuilderRepositoryTrait

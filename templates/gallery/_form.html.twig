@@ -1,0 +1,34 @@
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <div id="images">
+       {# {% for image in form.images %}
+            <li>{{ form_row(image) }}</li>
+        {% endfor %}#}
+    </div>
+<div class="upload-preview">
+    <div class="images-preview row  row-cols-sm-3 "> </div>
+    <input type="file" class="file_upload" multiple="multiple" data-preview-width="200" data-preview-height="200"
+    data-collection-holder-class="gallery_images"
+    data-template="<div class='card-item-block p-2'><div class='card image-item col'>
+    <canvas id='__CANVAS_ID_REPLACE__' class='card-img-top border-bottom'></canvas>
+    <div class='card-body'>
+        __FROM_REPLACE__
+        <p class='card-text'></p>
+        <a href='#' class='btn btn-danger' id='__DELETE_BUTTON_ID_REPLACE__'>Delete</a>
+    </div>
+</div></div>">
+</div>
+<button type="button"
+        data-index="0"
+        class="btn btn-light add_item_link"
+        data-ul-id="images"
+        data-collection-holder-class="gallery_images">Add a image</button>
+    <button class="btn">{{ button_label|default('Save') }}</button>
+
+
+{#{{ include ('gallery/_settings_form.html.twig') }}#}
+<hr>
+
+
+
+{{ form_end(form) }}

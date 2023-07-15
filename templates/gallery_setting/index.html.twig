@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %} {% trans %} Gallery Setting {% endtrans %} {% endblock %}
+{% block h1 %} {% trans %} Gallery Setting {% endtrans %} {% endblock %}
+
+{% block admin_header %}
+
+    <a href="{{ path('app_gallery_setting_new') }}" class="btn btn-primary btn-lg float-end">
+        {% trans %} Create New {% endtrans %}</a>
+
+{% endblock %}
+
+{% block breadcrumb %}
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">{% trans %} Home {% endtrans %} </a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans %} Gallery Setting {% endtrans %} </li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block body %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Gallery</th>
+                <th>Name</th>
+                <th>Width</th>
+                <th>Height</th>
+                <th>Path</th>
+                <th>IsDefault</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for gallery_setting in pagination %}
+
+            <tr>
+                <td> {{ gallery_setting.gallery is null ? 'Default' : gallery_setting.gallery.name }}</td>
+                <td>{{ gallery_setting.name }}</td>
+                <td>{{ gallery_setting.width }}</td>
+                <td>{{ gallery_setting.height }}</td>
+                <td>{{ gallery_setting.path }}</td>
+                <td>{{ gallery_setting.isDefault ? 'Yes' : 'No' }}</td>
+                <td>
+                    <a href="{{ path('app_gallery_setting_show', {'id': gallery_setting.id}) }}">show</a>
+                    <a href="{{ path('app_gallery_setting_edit', {'id': gallery_setting.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="7">  {% include 'elements/data_is_empty.html.twig' %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="navigation">
+        {{ knp_pagination_render(pagination) }}
+    </div>
+{% endblock %}

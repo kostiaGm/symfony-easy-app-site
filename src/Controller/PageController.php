@@ -45,8 +45,8 @@ class PageController extends AbstractController
     private PaginatorInterface $paginator;
     private CacheInterface $cache;
 
-    private const SUCCESS_MESSAGE = 'Page saved';
-    private const DELETE_MESSAGE = 'Page deleted';
+    private const SUCCESS_MESSAGE = 'Page was saved';
+    private const DELETE_MESSAGE = 'Page was deleted';
     private const ERROR_MESSAGE = "Error! Page not saved";
     private const ERROR_DELETE_MESSAGE = "Error! Page not deleted";
 

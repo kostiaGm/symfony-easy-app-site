@@ -6,8 +6,6 @@ use App\Entity\Menu;
 
 trait IsJoinMenuTrait
 {
-
-
     public function getMenu(): ?Menu
     {
         return $this->menu;
