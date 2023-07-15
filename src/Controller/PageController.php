@@ -100,7 +100,7 @@ class PageController extends AbstractController
             $queryBuilder,
             $this->cache,
             $this->repository->getAlias(),
-            $this->activeSiteService->get()['datetime_format'],
+            $this->activeSiteService->get()['datetime_format'] ?? '',
             $request->get('filter')
         );
 

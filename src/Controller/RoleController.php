@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Controller\Traits\BulkTrait;
+use App\Entity\Interfaces\StatusInterface;
 use App\Entity\Role;
 use App\Form\RoleType;
 use App\Repository\RoleRepository;
@@ -86,6 +87,7 @@ class RoleController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $role->setStatus(StatusInterface::STATUS_ACTIVE);
             $roleRepository->add($role, true);
 
             return $this
